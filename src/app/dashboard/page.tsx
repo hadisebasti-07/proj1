@@ -1,3 +1,6 @@
+'use client';
+
+import * as React from 'react';
 import {
   Card,
   CardContent,
@@ -25,8 +28,37 @@ import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { ArrowRight, PlusCircle, Users } from 'lucide-react';
+import { UserTable } from './users/user-table';
+import { UserForm } from './users/user-form';
+import type { User } from '@/lib/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 
 export default function DashboardPage() {
+    const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+
+    const handleEdit = (user: User) => {
+        setSelectedUser(user);
+        setIsFormOpen(true);
+    };
+
+    const handleAddNew = () => {
+        setSelectedUser(null);
+        setIsFormOpen(true);
+    };
+
+    const handleFormClose = () => {
+        setIsFormOpen(false);
+        setSelectedUser(null);
+    };
+
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
@@ -122,16 +154,13 @@ export default function DashboardPage() {
                         View, add, edit, and remove users.
                     </CardDescription>
                 </div>
-                <Button asChild>
-                    <Link href="/dashboard/users">
-                        <Users className="mr-2 h-4 w-4" />
-                        Manage Users
-                    </Link>
+                <Button onClick={handleAddNew}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add New User
                 </Button>
             </CardHeader>
-            <CardContent className="text-center py-16">
-                <h3 className="text-xl font-semibold mb-2">Access User Management</h3>
-                <p className="text-muted-foreground mb-4">Click the button above to manage all users in the system.</p>
+            <CardContent>
+                <UserTable onEdit={handleEdit} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -149,6 +178,20 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{selectedUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+            <DialogDescription>
+              {selectedUser
+                ? "Update the user's details below."
+                : 'Enter the details for the new user.'}
+            </DialogDescription>
+          </DialogHeader>
+          <UserForm user={selectedUser} onFormSubmit={handleFormClose} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
