@@ -10,6 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  initiateEmailSignIn,
+  initiateEmailSignUp,
+} from '@/firebase/non-blocking-login';
+import { useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   formType: 'login' | 'signup';
@@ -21,6 +27,8 @@ export function UserAuthForm({
   ...props
 }: UserAuthFormProps) {
   const { toast } = useToast();
+  const auth = useAuth();
+  const router = useRouter();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const formSchema = z.object({
@@ -42,15 +50,32 @@ export function UserAuthForm({
 
   async function onSubmit(data: FormData) {
     setIsLoading(true);
-    // This is where you would handle actual authentication
-    setTimeout(() => {
+    try {
+      if (formType === 'login') {
+        initiateEmailSignIn(auth, data.email, data.password);
+      } else {
+        initiateEmailSignUp(auth, data.email, data.password);
+      }
+      // Non-blocking, so we redirect immediately.
+      // The useUser hook will pick up the auth state change.
+      router.push('/dashboard');
+      toast({
+        title:
+          formType === 'login'
+            ? 'Signing in...'
+            : 'Creating account...',
+        description: 'You will be redirected shortly.',
+      });
+    } catch (error: any) {
       setIsLoading(false);
       toast({
-        title: 'Heads up!',
+        variant: 'destructive',
+        title: 'Authentication Error',
         description:
-          'This is a demo. Authentication is not implemented.',
+          error.message || 'An unexpected error occurred. Please try again.',
       });
-    }, 2000);
+    }
+    // Don't set isLoading to false here, as the page will redirect.
   }
 
   return (
@@ -91,9 +116,7 @@ export function UserAuthForm({
             )}
           </div>
           <Button disabled={isLoading} className="mt-2">
-            {isLoading && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {formType === 'login' ? 'Sign In' : 'Sign Up'}
           </Button>
         </div>

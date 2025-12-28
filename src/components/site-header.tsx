@@ -1,10 +1,15 @@
+
+'use client';
+
 import Link from 'next/link';
 import { Button } from './ui/button';
 import { Logo } from './icons';
 import { UserNav } from './user-nav';
+import { useUser } from '@/firebase';
+import { Skeleton } from './ui/skeleton';
 
 export function SiteHeader() {
-  const user = null; // Placeholder for user state
+  const { user, isUserLoading } = useUser();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -36,7 +41,9 @@ export function SiteHeader() {
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          {user ? (
+          {isUserLoading ? (
+            <Skeleton className="h-8 w-24" />
+          ) : user ? (
             <UserNav />
           ) : (
             <>

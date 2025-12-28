@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -27,10 +28,10 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { ArrowRight, PlusCircle, Users } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { UserTable } from './users/user-table';
 import { UserForm } from './users/user-form';
-import type { User } from '@/lib/types';
+import type { User as UserType } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -38,13 +39,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-    const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+    const { user, isUserLoading } = useUser();
+    const router = useRouter();
+    const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
 
-    const handleEdit = (user: User) => {
+    React.useEffect(() => {
+        if (!isUserLoading && !user) {
+            router.push('/auth/login');
+        }
+    }, [user, isUserLoading, router]);
+
+    const handleEdit = (user: UserType) => {
         setSelectedUser(user);
         setIsFormOpen(true);
     };
@@ -58,6 +68,14 @@ export default function DashboardPage() {
         setIsFormOpen(false);
         setSelectedUser(null);
     };
+    
+    if (isUserLoading || !user) {
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </div>
+        );
+    }
 
   return (
     <div className="container mx-auto py-10 px-4">
