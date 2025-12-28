@@ -1,3 +1,70 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-services",
+      "description": "A vibrant marketplace with many service providers",
+      "imageUrl": "https://images.unsplash.com/photo-1742899840385-94c8a667f52b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYXJrZXRwbGFjZSUyMHNlcnZpY2VzfGVufDB8fHx8MTc2NjkzNzUyMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "marketplace services"
+    },
+    {
+      "id": "service-plumbing",
+      "description": "A plumber fixing a sink",
+      "imageUrl": "https://images.unsplash.com/photo-1646324554833-f0b6a479fa5d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwbHVtYmluZyUyMHdvcmt8ZW58MHx8fHwxNzY2OTM3NTIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "plumbing work"
+    },
+    {
+      "id": "service-gardening",
+      "description": "A gardener tending to a beautiful garden",
+      "imageUrl": "https://images.unsplash.com/photo-1645111093133-00b3792dfe10?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnYXJkZW5pbmclMjBwbGFudHN8ZW58MHx8fHwxNzY2ODYxODMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gardening plants"
+    },
+    {
+      "id": "service-web-dev",
+      "description": "A person coding on a laptop",
+      "imageUrl": "https://images.unsplash.com/photo-1675495666589-94cdafbcfcc8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2RpbmclMjBwcm9ncmFtbWluZ3xlbnwwfHx8fDE3NjY4NTE4MDV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coding programming"
+    },
+    {
+      "id": "service-tutoring",
+      "description": "A tutor helping a student with homework",
+      "imageUrl": "https://images.unsplash.com/photo-1758685733907-42e9651721f5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0dXRvcmluZyUyMGVkdWNhdGlvbnxlbnwwfHx8fDE3NjY5Mzc1MjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "tutoring education"
+    },
+    {
+      "id": "service-cooking",
+      "description": "A private chef preparing a gourmet meal",
+      "imageUrl": "https://images.unsplash.com/photo-1581349485608-9469926a8e5e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2hlZiUyMGNvb2tpbmd8ZW58MHx8fHwxNzY2ODEzNDU0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chef cooking"
+    },
+    {
+      "id": "service-photography",
+      "description": "A photographer taking a picture with a professional camera",
+      "imageUrl": "https://images.unsplash.com/photo-1711473609941-ba09f9c95b93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwaG90b2dyYXBoZXIlMjBjYW1lcmF8ZW58MHx8fHwxNzY2ODM2OTA1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "photographer camera"
+    },
+    {
+      "id": "provider-avatar-1",
+      "description": "Avatar for a service provider",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjY4Njk4NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "provider-avatar-2",
+      "description": "Avatar for a service provider",
+      "imageUrl": "https://images.unsplash.com/photo-1610655507808-a59293f4e332?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2NjgzNTE2MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "provider-avatar-3",
+      "description": "Avatar for a service provider",
+      "imageUrl": "https://images.unsplash.com/photo-1583195763986-0231686dcd43?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjY4ODE2NTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "user-avatar-1",
+      "description": "Avatar for a user",
+      "imageUrl": "https://images.unsplash.com/photo-1657331017197-061601b1de71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxwZXJzb24lMjBwcm9maWxlfGVufDB8fHx8MTc2Njg5NzQxMXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person profile"
+    }
+  ]
 }
