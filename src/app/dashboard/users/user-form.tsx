@@ -111,9 +111,11 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         // Add new user - NOTE: This doesn't create an Auth user.
         // This is a simplified example. In a real app, you'd likely
         // have a more complex user creation flow.
+        const newUid = new Date().getTime().toString();
+        const userDoc = doc(firestore, 'users', newUid);
         addDocumentNonBlocking(usersCollection, {
           ...data,
-          uid: new Date().getTime().toString(), // Using timestamp as a temporary unique ID
+          uid: newUid, 
           createdAt: serverTimestamp(),
         });
         toast({

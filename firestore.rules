@@ -84,7 +84,7 @@ service cloud.firestore {
      */
     function hasValidUserDataOnCreate(userId) {
       return isOwner(userId)
-        && request.resource.data.id == userId
+        && request.resource.data.uid == userId
         && request.resource.data.role != 'admin';
     }
 
@@ -95,10 +95,10 @@ service cloud.firestore {
      */
     function canUpdateUser(userId) {
       // Enforce immutability of the document ID
-      let isIdUnchanged = request.resource.data.id == resource.data.id;
+      let isUidUnchanged = request.resource.data.uid == resource.data.uid;
       // An owner can update their profile, but cannot change their own role
       let isOwnerUpdatingSafely = isOwner(userId) && request.resource.data.role == resource.data.role;
-      return isIdUnchanged && (isOwnerUpdatingSafely || isAdmin());
+      return isUidUnchanged && (isOwnerUpdatingSafely || isAdmin());
     }
 
     /**
