@@ -6,9 +6,9 @@
       "type": "object",
       "description": "Represents a user in the MarketConnect application.",
       "properties": {
-        "id": {
+        "uid": {
           "type": "string",
-          "description": "Unique identifier for the User entity."
+          "description": "Unique identifier for the User entity, matching Firebase Auth UID."
         },
         "name": {
           "type": "string",
@@ -26,7 +26,7 @@
         "role": {
           "type": "string",
           "description": "The user's role within the application (customer, provider, or admin).",
-          "format": "string"
+          "enum": ["customer", "provider", "admin"]
         },
         "createdAt": {
           "type": "string",
@@ -35,7 +35,7 @@
         }
       },
       "required": [
-        "id",
+        "uid",
         "name",
         "email",
         "phone",

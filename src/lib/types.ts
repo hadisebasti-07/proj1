@@ -46,7 +46,8 @@ export type Booking = {
 };
 
 export type User = {
-    id: string;
+    id: string; // Firestore document ID
+    uid: string;
     name: string;
     email: string;
     phone: string;

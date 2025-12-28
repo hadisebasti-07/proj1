@@ -23,7 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
+import { useAuth, useFirestore } from '@/firebase';
 import {
   addDocumentNonBlocking,
   updateDocumentNonBlocking,
@@ -48,6 +48,7 @@ interface UserFormProps {
 export function UserForm({ user, onFormSubmit }: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user: authUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<FormData>({
@@ -86,6 +87,14 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
   }, [user, form]);
 
   async function onSubmit(data: FormData) {
+    if (!authUser) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'You must be logged in to perform this action.',
+        });
+        return;
+    }
     setIsSubmitting(true);
     const usersCollection = collection(firestore, 'users');
 
@@ -99,9 +108,12 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `Details for ${data.name} have been updated.`,
         });
       } else {
-        // Add new user
+        // Add new user - NOTE: This doesn't create an Auth user.
+        // This is a simplified example. In a real app, you'd likely
+        // have a more complex user creation flow.
         addDocumentNonBlocking(usersCollection, {
           ...data,
+          uid: new Date().getTime().toString(), // Using timestamp as a temporary unique ID
           createdAt: serverTimestamp(),
         });
         toast({
