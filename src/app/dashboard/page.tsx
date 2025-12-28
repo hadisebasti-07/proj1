@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { ArrowRight, PlusCircle } from 'lucide-react';
+import { ArrowRight, PlusCircle, Users } from 'lucide-react';
 
 export default function DashboardPage() {
   return (
@@ -32,9 +32,10 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-4 mb-6">
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
           <TabsTrigger value="provider">Provider Hub</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
         <TabsContent value="bookings">
@@ -109,6 +110,28 @@ export default function DashboardPage() {
             <CardContent className="text-center py-16">
               <h3 className="text-xl font-semibold mb-2">You have no active listings.</h3>
               <p className="text-muted-foreground mb-4">Start offering your services on MarketConnect today.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="users">
+           <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>
+                        View, add, edit, and remove users.
+                    </CardDescription>
+                </div>
+                <Button asChild>
+                    <Link href="/dashboard/users">
+                        <Users className="mr-2 h-4 w-4" />
+                        Manage Users
+                    </Link>
+                </Button>
+            </CardHeader>
+            <CardContent className="text-center py-16">
+                <h3 className="text-xl font-semibold mb-2">Access User Management</h3>
+                <p className="text-muted-foreground mb-4">Click the button above to manage all users in the system.</p>
             </CardContent>
           </Card>
         </TabsContent>

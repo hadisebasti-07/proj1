@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import type { Timestamp } from 'firebase/firestore';
 
 export type Category = {
   id: string;
@@ -43,3 +44,12 @@ export type Booking = {
   date: string;
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
 };
+
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    createdAt: Timestamp;
+}
