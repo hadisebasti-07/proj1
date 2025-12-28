@@ -1,0 +1,140 @@
+/**
+ * Core Philosophy:
+ * This ruleset implements a Role-Based Access Control (RBAC) model. A user's role,
+ * determined by a separate, secure collection, dictates their permissions. There are two
+ * primary roles: standard 'user' and 'admin'. Admins have full management
+ * capabilities over the user collection, while standard users can only manage their
+ * own profile document. The default security posture is denial, granting permissions
+ * explicitly based on these roles.
+ *
+ * Data Structure:
+ * The data is organized into two primary top-level collections:
+ * 1. /users/{userId}: Stores public user profile information. The document ID matches
+ *    the user's authentication UID.
+ * 2. /roles_admin/{userId}: A private, lookup-only collection. The existence of a
+ *    document here with a user's UID as the ID signifies that the user is an admin.
+ *    This collection is completely locked down from client-side modification.
+ *
+ * Key Security Decisions:
+ * - Admin Status: A user's admin status is determined solely by the existence of a
+ *   document in the `/roles_admin` collection. This is a secure and performant
+ *   pattern that avoids relying on a mutable field in the user's own profile.
+ * - User Listing: Only users with the 'admin' role are permitted to list all
+ *   documents in the `/users` collection. This prevents data leakage and protects
+ *   user privacy.
+ * - Self-Service with Protection: Users can create and manage their own profiles.
+ *   However, critical authorization fields, such as 'role', are immutable for
+ *   non-admin users to prevent self-privilege escalation.
+ * - Private Admin Collection: The `/roles_admin` collection is not readable or
+ *   writable by any client, ensuring that roles can only be managed by a trusted
+ *   backend process (e.g., Cloud Functions).
+ *
+ * Denormalization for Authorization:
+ * The RBAC model is implemented using a separate `/roles_admin` collection. This is a form of
+ * denormalization where a user's admin role is stored as a separate document. This allows
+ * for a fast `exists()` check in security rules, which is far more performant and secure
+ * than granting access based on a field within a user-editable document.
+ *
+ * Structural Segregation:
+ * User data (`/users`) is structurally segregated from administrative role data
+ * (`/roles_admin`). This allows for applying completely different and much stricter
+ * security policies to the role-defining collection, effectively creating a secure
+ * "admin zone" in the database that is inaccessible to clients.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    //
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the foundation for document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the requesting user has admin privileges.
+     * Admin status is determined by the existence of a document in the '/roles_admin' collection.
+     */
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * Verifies that the document being operated on already exists.
+     * CRITICAL for preventing unintended side-effects in update/delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * Validates data for a new user document on creation.
+     * Ensures the creator is the owner, path and data IDs match, and prevents self-assigning admin role.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      return isOwner(userId)
+        && request.resource.data.id == userId
+        && request.resource.data.role != 'admin';
+    }
+
+    /**
+     * Validates an update operation on a user document.
+     * An admin can update any field. A user can update their own profile but cannot
+     * change their ID or role.
+     */
+    function canUpdateUser(userId) {
+      // Enforce immutability of the document ID
+      let isIdUnchanged = request.resource.data.id == resource.data.id;
+      // An owner can update their profile, but cannot change their own role
+      let isOwnerUpdatingSafely = isOwner(userId) && request.resource.data.role == resource.data.role;
+      return isIdUnchanged && (isOwnerUpdatingSafely || isAdmin());
+    }
+
+    /**
+     * @description Rules for the user profile collection.
+     * @path /users/{userId}
+     * @allow (get) Any authenticated user can view any user's profile.
+     * @allow (list) An admin can list all users for the management screen.
+     * @allow (create) A new user can create their own user profile document.
+     * @allow (update) An admin can update any user's profile; a user can update their own.
+     * @allow (delete) An admin can delete any user; a user can delete their own account.
+     * @deny (list) A non-admin user trying to list all users in the app.
+     * @deny (create) A user trying to create a profile for another user's UID.
+     * @deny (update) A user trying to change their own role to 'admin'.
+     * @principle Implements a Role-Based Access Control (RBAC) model combined with user ownership.
+     */
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
+      allow create: if hasValidUserDataOnCreate(userId);
+      allow update: if isExistingDoc() && canUpdateUser(userId);
+      allow delete: if isExistingDoc() && (isOwner(userId) || isAdmin());
+    }
+
+    /**
+     * @description Private collection to designate admin users. The existence of a doc means the user is an admin.
+     * @path /roles_admin/{userId}
+     * @allow N/A - All client-side access is forbidden.
+     * @deny (get, list, create, update, delete) Any client attempting to read or write to this collection.
+     * @principle This collection acts as a secure, backend-managed lookup table for authorization rules, preventing any client-side tampering with user roles.
+     */
+    match /roles_admin/{userId} {
+      allow get: if false;
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
