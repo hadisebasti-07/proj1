@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -39,12 +38,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
     const { user, isUserLoading } = useUser();
     const router = useRouter();
+    const firestore = useFirestore();
+
+    const userDocRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [firestore, user]);
+
+    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+
     const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
     const [isFormOpen, setIsFormOpen] = React.useState(false);
 
@@ -68,24 +77,26 @@ export default function DashboardPage() {
         setIsFormOpen(false);
         setSelectedUser(null);
     };
-    
-    if (isUserLoading || !user) {
+
+    if (isUserLoading || isProfileLoading || !user) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
         );
     }
+    
+    const isAdmin = userProfile?.role === 'admin';
 
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3' } mb-6`}>
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
           <TabsTrigger value="provider">Provider Hub</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+          {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
         <TabsContent value="bookings">
@@ -163,25 +174,27 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="users">
-           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>
-                        View, add, edit, and remove users.
-                    </CardDescription>
-                </div>
-                <Button onClick={handleAddNew}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New User
-                </Button>
-            </CardHeader>
-            <CardContent>
-                <UserTable onEdit={handleEdit} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {isAdmin && (
+            <TabsContent value="users">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>User Management</CardTitle>
+                        <CardDescription>
+                            View, add, edit, and remove users.
+                        </CardDescription>
+                    </div>
+                    <Button onClick={handleAddNew}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New User
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <UserTable onEdit={handleEdit} />
+                </CardContent>
+            </Card>
+            </TabsContent>
+        )}
         <TabsContent value="account">
           <Card>
             <CardHeader>
