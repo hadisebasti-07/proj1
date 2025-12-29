@@ -7,10 +7,17 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Allow individual user document access
     match /users/{userId} {
       allow read, write: if isSignedIn();
     }
 
+    // Allow any authenticated user to list all users
+    match /users {
+      allow list: if isSignedIn();
+    }
+
+    // Default deny all other documents
     match /{document=**} {
       allow read, write: if false;
     }
