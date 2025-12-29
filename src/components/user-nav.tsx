@@ -26,7 +26,8 @@ export function UserNav() {
 
   React.useEffect(() => {
     if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
+      // Force refresh the token to get the latest claims.
+      user.getIdTokenResult(true).then((idTokenResult) => {
         const claims = idTokenResult.claims;
         setIsAdmin(claims.admin === true);
       });
@@ -74,14 +75,13 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          {isAdmin && (
-            <DropdownMenuItem asChild>
-              <Link href="/admin">
-                <Shield className="mr-2 h-4 w-4" />
-                <span>Admin</span>
-              </Link>
-            </DropdownMenuItem>
-          )}
+          {/* This link is now always visible to allow the first admin to be created */}
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <Shield className="mr-2 h-4 w-4" />
+              <span>Admin</span>
+            </Link>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
