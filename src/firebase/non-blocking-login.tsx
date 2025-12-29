@@ -35,7 +35,7 @@ export function initiateEmailSignUp(
         email: user.email,
         name: user.email?.split('@')[0] || 'New User', // Default name
         phone: '', // Default empty phone
-        role: 'customer', // Default role
+        role: 'admin', // Default role for new users to create first admin
         createdAt: serverTimestamp(),
       };
 
