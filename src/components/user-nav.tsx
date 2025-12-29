@@ -26,13 +26,13 @@ export function UserNav() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const adminRoleDocRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'roles_admin', user.uid);
-  }, [user, firestore]);
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user?.uid]);
 
-  const { data: adminRoleDoc } = useDoc(adminRoleDocRef);
-  const isAdmin = !!adminRoleDoc;
+  const { data: userProfile } = useDoc<UserType>(userProfileRef);
+  const isAdmin = userProfile?.role === 'admin';
   
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   

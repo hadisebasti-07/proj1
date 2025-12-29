@@ -22,8 +22,8 @@ service cloud.firestore {
       allow list: if isUserAdmin();
       // A user can create their own profile, but cannot set their role to admin upon creation.
       allow create: if isOwner(userId) && request.resource.data.role != 'admin';
-      // An admin can update any user. A user can update their own profile.
-      allow update: if isOwner(userId) || isUserAdmin();
+      // An admin can update any user. A user can update their own profile, but cannot change their own role.
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role || isUserAdmin();
       allow delete: if isOwner(userId) || isUserAdmin();
     }
   }

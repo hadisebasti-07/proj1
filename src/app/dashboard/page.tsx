@@ -231,8 +231,7 @@ export default function DashboardPage() {
                 <div className="max-w-md mx-auto p-4 border rounded-lg bg-secondary/30">
                   <h4 className="font-semibold">Admin Access</h4>
                   <p className="text-sm text-muted-foreground mt-1">
-                    To view the User Management tab, you need admin privileges.
-                    Please have an existing admin grant you the role, or manually edit your user document in the Firestore console.
+                    To enable the 'Users' tab, please ask an existing administrator to grant you the admin role, or manually edit your 'role' field to 'admin' in the Firestore 'users' collection for your user document.
                   </p>
                 </div>
               )}

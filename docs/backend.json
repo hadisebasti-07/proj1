@@ -48,13 +48,7 @@
     "providers": [
       "password",
       "anonymous"
-    ],
-    "customClaims": {
-        "admin": {
-            "type": "boolean",
-            "description": "Grants administrator-level access to the application."
-        }
-    }
+    ]
   },
   "firestore": {
     "structure": [
@@ -65,7 +59,7 @@
           "schema": {
             "$ref": "#/backend/entities/User"
           },
-          "description": "Stores user profile information. Includes denormalized 'role' field for authorization independence. This allows list operations to be secured using role-based access control.",
+          "description": "Stores user profile information. The 'role' field is used for authorization.",
           "params": [
             {
               "name": "userId",
