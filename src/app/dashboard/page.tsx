@@ -79,6 +79,11 @@ export default function DashboardPage() {
     }
   };
 
+  const handleFormSuccess = () => {
+    // This function is called by the form on successful submission.
+    // It signals that the dialog should close.
+    setIsFormOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -240,7 +245,7 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={() => onOpenChange(false)} />
+            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
           )}
         </DialogContent>
       </Dialog>
