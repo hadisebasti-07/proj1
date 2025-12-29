@@ -13,24 +13,27 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { LayoutGrid, LogOut, User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import type { User as UserType } from '@/lib/types';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
+
 
 export function UserNav() {
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = React.useState(false);
 
-  React.useEffect(() => {
-    if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        const claims = idTokenResult.claims;
-        setIsAdmin(claims.admin === true);
-      });
-    }
-  }, [user]);
+  const userDocRef = React.useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile } = useDoc<UserType>(userDocRef);
+  const isAdmin = userProfile?.role === 'admin';
+  
 
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   
@@ -75,12 +78,14 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/admin">
-              <Shield className="mr-2 h-4 w-4" />
-              <span>Admin</span>
-            </Link>
-          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin Section</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

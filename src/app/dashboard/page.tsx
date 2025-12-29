@@ -38,19 +38,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser } from '@/firebase';
+import { useUser, useDoc, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = React.useState(false);
-  const [isCheckingAdmin, setIsCheckingAdmin] = React.useState(true);
-  
+  const firestore = useFirestore();
+
+  const userDocRef = React.useMemo(() => {
+    if (!user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
   );
+  
+  const isAdmin = userProfile?.role === 'admin';
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -58,21 +67,8 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  React.useEffect(() => {
-    if (user) {
-      setIsCheckingAdmin(true);
-      user.getIdTokenResult().then((idTokenResult) => {
-        const claims = idTokenResult.claims;
-        setIsAdmin(claims.admin === true);
-        setIsCheckingAdmin(false);
-      });
-    } else {
-      setIsAdmin(false);
-      setIsCheckingAdmin(false);
-    }
-  }, [user]);
 
-  const isLoading = isUserLoading || isCheckingAdmin;
+  const isLoading = isUserLoading || isProfileLoading;
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -198,7 +194,6 @@ export default function DashboardPage() {
         </TabsContent>
         
         <TabsContent value="users">
-          {isAdmin ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -207,28 +202,21 @@ export default function DashboardPage() {
                     View, add, edit, and remove users.
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddNew}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New User
-                </Button>
+                 {isAdmin && (
+                    <Button onClick={handleAddNew}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add New User
+                    </Button>
+                 )}
               </CardHeader>
               <CardContent>
-                <UserTable onEdit={handleEdit} />
+                {isAdmin ? (
+                    <UserTable onEdit={handleEdit} />
+                ) : (
+                    <p>You do not have permission to view this page.</p>
+                )}
               </CardContent>
             </Card>
-          ) : (
-             <Card>
-                <CardHeader>
-                  <CardTitle>Access Denied</CardTitle>
-                  <CardDescription>
-                    You do not have permission to view this page.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>Only administrators can manage users.</p>
-                </CardContent>
-             </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="account">

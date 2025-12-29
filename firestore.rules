@@ -2,20 +2,15 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+    
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     match /users/{userId} {
-      allow list: if request.auth.token.admin == true;
-      allow get: if isOwner(userId) || request.auth.token.admin == true;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || request.auth.token.admin == true;
-      allow delete: if request.auth.token.admin == true;
+      allow read, write: if isSignedIn();
     }
 
-    // A catch-all rule to prevent accidental access to other collections.
     match /{document=**} {
       allow read, write: if false;
     }
