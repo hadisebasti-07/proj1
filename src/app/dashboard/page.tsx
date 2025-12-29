@@ -69,15 +69,11 @@ export default function DashboardPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = () => {
-    setIsFormOpen(false);
-  };
-  
-  const handleOpenChange = (open: boolean) => {
-    setIsFormOpen(open);
+  const onOpenChange = (open: boolean) => {
     if (!open) {
       setSelectedUser(null);
     }
+    setIsFormOpen(open);
   };
 
 
@@ -228,7 +224,7 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isFormOpen} onOpenChange={handleOpenChange}>
+      <Dialog open={isFormOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
@@ -241,7 +237,7 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={handleFormSubmit} />
+            <UserForm user={selectedUser} onFormSubmit={() => setIsFormOpen(false)} />
           )}
         </DialogContent>
       </Dialog>
