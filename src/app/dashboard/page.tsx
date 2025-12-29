@@ -1,6 +1,6 @@
 'use client';
 
-import * as React from 'react';
+import * as React.
 import {
   Card,
   CardContent,
@@ -38,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useDoc, useFirestore } from '@/firebase';
+import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { doc } from 'firebase/firestore';
 
@@ -47,10 +47,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const firestore = useFirestore();
 
-  const userDocRef = React.useMemo(() => {
-    if (!user) return null;
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
+  }, [firestore, user?.uid]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
 
@@ -59,7 +59,8 @@ export default function DashboardPage() {
     null
   );
   
-  const isAdmin = userProfile?.role === 'admin';
+  const isLoading = isUserLoading || isProfileLoading;
+  const isAdmin = !isLoading && userProfile?.role === 'admin';
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -67,8 +68,6 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-
-  const isLoading = isUserLoading || isProfileLoading;
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -116,7 +115,7 @@ export default function DashboardPage() {
         <TabsContent value="bookings">
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming & Past Bookings</CardTitle>
+              <CardTitle>Upcoming &amp; Past Bookings</CardTitle>
               <CardDescription>
                 Manage your scheduled and completed services.
               </CardDescription>

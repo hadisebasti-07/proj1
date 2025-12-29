@@ -2,9 +2,26 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow any authenticated user to read and write to the users collection
+
+    // Helper function to check for admin role on a user's own document
+    function isUserAdmin(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      // Admins can list all users
+      allow list: if isUserAdmin(request.auth.uid);
+      
+      // Any authenticated user can read their own profile
+      // Admins can read any user's profile
+      allow get: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+
+      // Any authenticated user can update their own profile
+      // Admins can update any user's profile
+      allow update: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      
+      // Admins can create and delete users
+      allow create, delete: if isUserAdmin(request.auth.uid);
     }
   }
 }
