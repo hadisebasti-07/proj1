@@ -38,49 +38,26 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading, isUserAdmin } = useFirebase();
   const router = useRouter();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user?.uid]);
-
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userProfileRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
   );
 
-  const isLoading = isUserLoading || isProfileLoading;
-  const isAdmin = !isLoading && userProfile?.role === 'admin';
+  const isLoading = isUserLoading;
+  const isAdmin = !isLoading && isUserAdmin;
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth/login');
     }
   }, [user, isUserLoading, router]);
-
-  React.useEffect(() => {
-    // This will log the authentication state from the useUser() hook.
-    if (!isUserLoading) {
-      console.log('Auth user object (from useUser):', user);
-    }
-    
-    // This will log the Firestore document data from the useDoc() hook.
-    if (userProfile) {
-      console.log('Current user profile data (from Firestore):', userProfile);
-    }
-  }, [user, userProfile, isUserLoading]);
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);

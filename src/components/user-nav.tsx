@@ -13,32 +13,23 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { LayoutGrid, LogOut, User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import type { User as UserType } from '@/lib/types';
+import { useFirebase, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 
 
 export function UserNav() {
-  const { user } = useUser();
+  const { user, isUserAdmin } = useFirebase();
   const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user?.uid]);
-
-  const { data: userProfile } = useDoc<UserType>(userProfileRef);
-  const isAdmin = userProfile?.role === 'admin';
   
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   
   const handleLogout = () => {
-    signOut(auth);
-    router.push('/auth/login');
+    if (auth) {
+        signOut(auth);
+        router.push('/auth/login');
+    }
   };
 
   const displayName = user?.displayName || user?.email || 'User';
@@ -77,7 +68,7 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          {isAdmin && (
+          {isUserAdmin && (
             <DropdownMenuItem asChild>
               <Link href="/dashboard">
                 <Shield className="mr-2 h-4 w-4" />
