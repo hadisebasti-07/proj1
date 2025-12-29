@@ -70,10 +70,13 @@ export default function DashboardPage() {
   };
 
   const onOpenChange = (open: boolean) => {
+    // This is now the single source of truth for closing the dialog.
     if (!open) {
+      setIsFormOpen(false);
       setSelectedUser(null);
+    } else {
+      setIsFormOpen(true);
     }
-    setIsFormOpen(open);
   };
 
 
@@ -237,7 +240,7 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={() => setIsFormOpen(false)} />
+            <UserForm user={selectedUser} onFormSubmit={() => onOpenChange(false)} />
           )}
         </DialogContent>
       </Dialog>

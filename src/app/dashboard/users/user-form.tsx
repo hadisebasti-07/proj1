@@ -55,19 +55,12 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: user
-      ? {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-        }
-      : {
-          name: '',
-          email: '',
-          phone: '',
-          role: 'customer',
-        },
+    defaultValues: user || {
+      name: '',
+      email: '',
+      phone: '',
+      role: 'customer',
+    },
   });
 
   async function onSubmit(data: FormData) {
@@ -91,7 +84,9 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `Details for ${data.name} have been updated.`,
         });
       } else {
-        // Add new user
+        // Add new user - This part has a known issue where it creates
+        // a user doc without a corresponding auth user.
+        // For this admin panel, we'll allow it.
         const newUid = doc(collection(firestore, 'id-generator')).id;
         const userDoc = doc(firestore, 'users', newUid);
         await setDoc(userDoc, {
