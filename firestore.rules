@@ -1,8 +1,42 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper function to check if the user's role is 'admin' from their own user document.
+    function isOwnProfile(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Check if the requesting user is an admin by looking at their custom claims
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Admins can read any user profile.
+      // Any authenticated user can read their own profile.
+      allow get: if isAdmin() || isOwnProfile(userId);
+
+      // Only Admins can list all users.
+      allow list: if isAdmin();
+      
+      // Any authenticated user can create their own profile during sign-up.
+      // Admins can create new users.
+      allow create: if isOwnProfile(userId) || isAdmin();
+      
+      // Admins can update any user profile.
+      // Users can only update their own profile.
+      allow update: if isAdmin() || isOwnProfile(userId);
+      
+      // Only admins can delete users.
+      allow delete: if isAdmin();
+    }
+
+    // Fallback for any other collections
     match /{document=**} {
-      allow read, write: if true;
+      // Default to denying all other operations for security.
+      allow read, write: if false;
     }
   }
 }

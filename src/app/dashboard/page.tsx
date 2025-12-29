@@ -52,8 +52,8 @@ export default function DashboardPage() {
     [user, firestore]
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+  
   const [isAdmin, setIsAdmin] = React.useState(false);
-
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
@@ -65,17 +65,15 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  React.useEffect(() => {
-    if (userProfile) {
-      setIsAdmin(userProfile.role === 'admin');
-    } else {
-      // If there's no profile, they are not an admin.
-      setIsAdmin(false);
-    }
-  }, [userProfile]);
-
   const isLoading = isUserLoading || isProfileLoading;
-  
+
+  React.useEffect(() => {
+    // Only determine the admin status once the profile has loaded
+    if (!isLoading && userProfile) {
+      setIsAdmin(userProfile.role === 'admin');
+    }
+  }, [isLoading, userProfile]);
+
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
     setIsFormOpen(true);
@@ -198,8 +196,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        {isAdmin && (
-           <TabsContent value="users">
+        <TabsContent value="users">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -214,11 +211,17 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <UserTable onEdit={handleEdit} />
+                {/* This is the critical change: Only render UserTable when confirmed as admin */}
+                {isAdmin ? (
+                  <UserTable onEdit={handleEdit} />
+                ) : (
+                   <div className="flex items-center justify-center py-16">
+                     <p className="text-muted-foreground">You do not have permission to view users.</p>
+                   </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
-        )}
         <TabsContent value="account">
           <Card>
             <CardHeader>
