@@ -38,21 +38,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-
-  const userDocRef = useMemoFirebase(
-    () => (user ? doc(firestore, 'users', user.uid) : null),
-    [user, firestore]
-  );
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
   
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isClaimsLoading, setIsClaimsLoading] = React.useState(true);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
@@ -61,11 +56,16 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth/login');
+    } else if (user) {
+      setIsClaimsLoading(true);
+      user.getIdTokenResult(true).then((idTokenResult) => {
+        setIsAdmin(idTokenResult.claims.admin === true);
+        setIsClaimsLoading(false);
+      });
     }
   }, [user, isUserLoading, router]);
 
-  const isLoading = isUserLoading || isProfileLoading;
-  const isAdmin = !isLoading && userProfile?.role === 'admin';
+  const isLoading = isUserLoading || isClaimsLoading;
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -189,7 +189,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="users">
+        {isAdmin && <TabsContent value="users">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -204,16 +204,10 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {isAdmin ? (
-                  <UserTable onEdit={handleEdit} />
-                ) : (
-                   <div className="flex items-center justify-center py-16">
-                     <p className="text-muted-foreground">You do not have permission to view users.</p>
-                   </div>
-                )}
+                <UserTable onEdit={handleEdit} />
               </CardContent>
             </Card>
-          </TabsContent>
+          </TabsContent>}
         <TabsContent value="account">
           <Card>
             <CardHeader>

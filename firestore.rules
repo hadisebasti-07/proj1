@@ -2,33 +2,26 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the user is an admin based on their document role.
-    function isUserAdmin(userId) {
-      // Allow reading the user's own document to check their role.
-      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
-    }
-
+    
     // Rules for the 'users' collection
     match /users/{userId} {
       // Any authenticated user can read their own profile.
       // Admins can read any user profile.
-      allow get: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow get: if request.auth.uid == userId || request.auth.token.admin == true;
 
-      // Only admins can list all users.
-      // This is the rule causing the error, as `get` is not allowed in `list` rules.
-      // We will update the application logic to handle this.
-      allow list: if isUserAdmin(request.auth.uid);
+      // Only admins (with a custom claim) can list all users.
+      allow list: if request.auth.token.admin == true;
       
       // An authenticated user can create their own profile.
       // Admins can create new user profiles.
-      allow create: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow create: if request.auth.uid == userId || request.auth.token.admin == true;
       
       // A user can update their own profile.
       // Admins can update any user profile.
-      allow update: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow update: if request.auth.uid == userId || request.auth.token.admin == true;
       
       // Only admins can delete users.
-      allow delete: if isUserAdmin(request.auth.uid);
+      allow delete: if request.auth.token.admin == true;
     }
 
     // Fallback for any other collections - deny all access
