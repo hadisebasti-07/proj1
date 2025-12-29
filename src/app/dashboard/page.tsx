@@ -233,7 +233,10 @@ export default function DashboardPage() {
                 : 'Enter the details for the new user.'}
             </DialogDescription>
           </DialogHeader>
-          <UserForm user={selectedUser} onFormSubmit={handleFormClose} />
+          {/* This ensures the form is only mounted when the dialog is open */}
+          {isFormOpen && (
+            <UserForm user={selectedUser} onFormSubmit={handleFormClose} />
+          )}
         </DialogContent>
       </Dialog>
     </div>

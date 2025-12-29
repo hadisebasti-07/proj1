@@ -31,7 +31,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits.'),
-  role: z.enum(['customer', 'provider', 'admin']),
+  role: z.enum(['customer', 'provider']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -49,9 +49,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    // Use defaultValues to initialize the form.
-    // This is the correct approach and avoids complex useEffect hooks.
-    // The key ensures the form re-initializes when we switch between editing different users.
     defaultValues: user ? {
         name: user.name,
         email: user.email,
@@ -100,7 +97,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
-      // Only call this on success, after the await is complete.
       onFormSubmit();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -110,7 +106,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         description: 'An unexpected error occurred.',
       });
     } finally {
-      // This will run regardless of success or failure.
       setIsSubmitting(false);
     }
   }
@@ -172,7 +167,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                 <SelectContent>
                   <SelectItem value="customer">Customer</SelectItem>
                   <SelectItem value="provider">Provider</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
