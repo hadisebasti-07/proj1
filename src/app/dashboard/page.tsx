@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -28,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Shield } from 'lucide-react';
 import { UserTable } from './users/user-table';
 import { UserForm } from './users/user-form';
 import type { User as UserType } from '@/lib/types';
@@ -41,25 +40,26 @@ import {
 } from '@/components/ui/dialog';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+  const { data: userProfile, isLoading: isProfileLoading } =
+    useDoc<UserType>(userDocRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
-    null
-  );
-  
+  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
+
   const isLoading = isUserLoading || isProfileLoading;
   const isAdmin = !isLoading && userProfile?.role === 'admin';
 
@@ -68,7 +68,6 @@ export default function DashboardPage() {
       router.push('/auth/login');
     }
   }, [user, isUserLoading, router]);
-
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -83,6 +82,43 @@ export default function DashboardPage() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setSelectedUser(null);
+  };
+
+  const makeAdmin = async () => {
+    if (!user || !firestore) return;
+    try {
+      // Create a document in /users/{userId} with role: 'admin'
+      // This will satisfy the `isAdmin` function in your security rules.
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(
+        userRef,
+        {
+          uid: user.uid,
+          email: user.email,
+          name: user.displayName || user.email,
+          phone: '',
+          role: 'admin',
+          createdAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      toast({
+        title: 'Admin Role Granted',
+        description: 'You are now an admin. The page will reload.',
+      });
+      
+      // Force a reload to re-evaluate the user's role
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Error making admin:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not grant admin role.',
+      });
+    }
   };
 
   if (isLoading) {
@@ -192,8 +228,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
-        <TabsContent value="users">
+
+        {isAdmin ? (
+          <TabsContent value="users">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -202,22 +239,17 @@ export default function DashboardPage() {
                     View, add, edit, and remove users.
                   </CardDescription>
                 </div>
-                 {isAdmin && (
-                    <Button onClick={handleAddNew}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add New User
-                    </Button>
-                 )}
+                <Button onClick={handleAddNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New User
+                </Button>
               </CardHeader>
               <CardContent>
-                {isAdmin ? (
-                    <UserTable onEdit={handleEdit} />
-                ) : (
-                    <p>You do not have permission to view this page.</p>
-                )}
+                <UserTable onEdit={handleEdit} />
               </CardContent>
             </Card>
-        </TabsContent>
+          </TabsContent>
+        ) : null}
 
         <TabsContent value="account">
           <Card>
@@ -227,10 +259,20 @@ export default function DashboardPage() {
                 Update your profile and notification preferences.
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center py-16">
+            <CardContent className="text-center py-16 space-y-4">
               <p className="text-muted-foreground">
                 Account settings UI to be implemented here.
               </p>
+              {!isAdmin && (
+                <div className='max-w-md mx-auto p-4 border rounded-lg bg-secondary/30'>
+                  <h4 className='font-semibold'>Admin Access</h4>
+                  <p className='text-sm text-muted-foreground mt-1 mb-3'>To view the User Management tab, you need admin privileges. Click the button below to grant them to your account.</p>
+                  <Button onClick={makeAdmin}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Make Me Admin (One-Time Action)
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
