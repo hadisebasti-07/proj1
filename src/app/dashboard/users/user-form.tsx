@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { DialogClose } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, useFirestore } from '@/firebase';
@@ -42,12 +43,20 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
+const defaultValues = {
+  name: '',
+  email: '',
+  phone: '',
+  role: 'customer' as const,
+};
+
 interface UserFormProps {
   user: User | null;
   onFormSubmit: () => void;
+  open: boolean;
 }
 
-export function UserForm({ user, onFormSubmit }: UserFormProps) {
+export function UserForm({ user, onFormSubmit, open }: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: authUser } = useFirebase();
@@ -55,23 +64,14 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: user || {
-      name: '',
-      email: '',
-      phone: '',
-      role: 'customer',
-    },
+    defaultValues: user || defaultValues,
   });
-  
-  React.useEffect(() => {
-    // This effect ensures that if a new user is selected for editing,
-    // the form resets to that new user's values.
-    // It doesn't run when `user` becomes `null` on close.
-    if (user) {
-      form.reset(user);
-    }
-  }, [user, form]);
 
+  React.useEffect(() => {
+    if (open) {
+      form.reset(user || defaultValues);
+    }
+  }, [user, open, form]);
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
@@ -86,7 +86,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
     try {
       if (user) {
-        // Update existing user
         const userDoc = doc(firestore, 'users', user.uid);
         await updateDoc(userDoc, data);
         toast({
@@ -94,9 +93,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `Details for ${data.name} have been updated.`,
         });
       } else {
-        // Add new user - This part has a known issue where it creates
-        // a user doc without a corresponding auth user.
-        // For this admin panel, we'll allow it.
         const newUid = doc(collection(firestore, 'id-generator')).id;
         const userDoc = doc(firestore, 'users', newUid);
         await setDoc(userDoc, {
@@ -109,7 +105,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
-      onFormSubmit(); // Signal success to the parent
+      onFormSubmit();
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
@@ -126,74 +122,86 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="John Doe" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="john.doe@example.com"
-                  {...field}
-                  disabled={!!user}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input placeholder="(123) 456-7890" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a role" />
-                  </SelectTrigger>
+                  <Input placeholder="John Doe" {...field} />
                 </FormControl>
-                <SelectContent>
-                  <SelectItem value="customer">Customer</SelectItem>
-                  <SelectItem value="provider">Provider</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {user ? 'Update User' : 'Add User'}
-        </Button>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="john.doe@example.com"
+                    {...field}
+                    disabled={!!user}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl>
+                  <Input placeholder="(123) 456-7890" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="role"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="customer">Customer</SelectItem>
+                    <SelectItem value="provider">Provider</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="flex justify-end space-x-4">
+            <DialogClose asChild>
+                <Button type="button" variant="outline">
+                    Cancel
+                </Button>
+            </DialogClose>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {user ? 'Update User' : 'Add User'}
+          </Button>
+        </div>
       </form>
     </Form>
   );

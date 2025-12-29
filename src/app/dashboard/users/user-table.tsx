@@ -15,6 +15,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,14 +47,19 @@ export function UserTable({ onEdit }: UserTableProps) {
   const { data: users, isLoading } = useCollection<User>(usersCollection);
 
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [userToDelete, setUserToDelete] = React.useState<User | null>(null);
 
-  const handleDelete = (userId: string, userName: string) => {
-    if (window.confirm(`Are you sure you want to delete ${userName}?`)) {
-      const userDoc = doc(firestore, 'users', userId);
+  const handleDeleteConfirmation = (user: User) => {
+    setUserToDelete(user);
+  };
+
+  const handleDelete = () => {
+    if (userToDelete) {
+      const userDoc = doc(firestore, 'users', userToDelete.uid);
       deleteDocumentNonBlocking(userDoc);
       toast({
         title: 'User Deleted',
-        description: `${userName} has been removed from the system.`,
+        description: `${userToDelete.name} has been removed from the system.`,
       });
     }
   };
@@ -115,7 +130,7 @@ export function UserTable({ onEdit }: UserTableProps) {
                           <span>Edit</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(user.uid, user.name)}
+                          onClick={() => handleDeleteConfirmation(user)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
@@ -136,6 +151,23 @@ export function UserTable({ onEdit }: UserTableProps) {
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {' '}
+              <strong>{userToDelete?.name}</strong> and remove their data from our
+              servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
