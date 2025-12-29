@@ -48,7 +48,13 @@
     "providers": [
       "password",
       "anonymous"
-    ]
+    ],
+    "customClaims": {
+        "admin": {
+            "type": "boolean",
+            "description": "Grants administrator-level access to the application."
+        }
+    }
   },
   "firestore": {
     "structure": [
@@ -68,7 +74,6 @@
           ]
         }
       }
-    ],
-    "reasoning": "The Firestore structure is designed to manage user data securely and efficiently within the MarketConnect application. It follows the principle of Authorization Independence by storing user roles directly within each user document, avoiding the need for complex `get()` calls in security rules. The structure uses segregated paths for user data, ensuring a homogeneous security posture. Specifically, user profiles are stored at `/users/{userId}`, and their roles are included directly in the User document. This enables straightforward role-based access control. QAPs are supported because listing users can be secured based on roles without needing to filter based on content, thanks to the denormalized role data."
+    ]
   }
 }

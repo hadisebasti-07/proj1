@@ -38,69 +38,80 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
-    const { user, isUserLoading } = useUser();
-    const router = useRouter();
-    const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = React.useState(true);
 
-    const userDocRef = useMemoFirebase(() => {
-        if (!user?.uid || !firestore) return null;
-        return doc(firestore, 'users', user.uid);
-    }, [firestore, user?.uid]);
+  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
+    null
+  );
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
 
-    const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
-
-    const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
-    const [isFormOpen, setIsFormOpen] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!isUserLoading && !user) {
-            router.push('/auth/login');
-        }
-    }, [user, isUserLoading, router]);
-
-    const handleEdit = (user: UserType) => {
-        setSelectedUser(user);
-        setIsFormOpen(true);
-    };
-
-    const handleAddNew = () => {
-        setSelectedUser(null);
-        setIsFormOpen(true);
-    };
-
-    const handleFormClose = () => {
-        setIsFormOpen(false);
-        setSelectedUser(null);
-    };
-
-    const isLoading = isUserLoading || isProfileLoading;
-
-    if (isLoading) {
-        return (
-            <div className="flex h-screen items-center justify-center">
-                <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            </div>
-        );
+  React.useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/auth/login');
     }
-    
-    if (!user) {
-        // This can happen briefly while redirecting.
-        return null;
+  }, [user, isUserLoading, router]);
+
+  React.useEffect(() => {
+    if (user) {
+      setIsCheckingAdmin(true);
+      user.getIdTokenResult(true).then((idTokenResult) => {
+        const isAdminClaim = !!idTokenResult.claims.admin;
+        setIsAdmin(isAdminClaim);
+        setIsCheckingAdmin(false);
+      });
+    } else if (!isUserLoading) {
+      setIsAdmin(false);
+      setIsCheckingAdmin(false);
     }
-    
-    const isAdmin = userProfile?.role === 'admin';
+  }, [user, isUserLoading]);
+
+  const handleEdit = (user: UserType) => {
+    setSelectedUser(user);
+    setIsFormOpen(true);
+  };
+
+  const handleAddNew = () => {
+    setSelectedUser(null);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setSelectedUser(null);
+  };
+
+  const isLoading = isUserLoading || isCheckingAdmin;
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    // This can happen briefly while redirecting.
+    return null;
+  }
 
   return (
     <div className="container mx-auto py-10 px-4">
       <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
 
       <Tabs defaultValue="bookings" className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3' } mb-6`}>
+        <TabsList
+          className={`grid w-full ${
+            isAdmin ? 'grid-cols-4' : 'grid-cols-3'
+          } mb-6`}
+        >
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
           <TabsTrigger value="provider">Provider Hub</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
@@ -168,39 +179,43 @@ export default function DashboardPage() {
                   Manage your service listings and connect with customers.
                 </CardDescription>
               </div>
-               <Button asChild>
+              <Button asChild>
                 <Link href="/dashboard/provider/create">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Create New Listing
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create New Listing
                 </Link>
-               </Button>
+              </Button>
             </CardHeader>
             <CardContent className="text-center py-16">
-              <h3 className="text-xl font-semibold mb-2">You have no active listings.</h3>
-              <p className="text-muted-foreground mb-4">Start offering your services on MarketConnect today.</p>
+              <h3 className="text-xl font-semibold mb-2">
+                You have no active listings.
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Start offering your services on MarketConnect today.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
         {isAdmin && (
-            <TabsContent value="users">
+          <TabsContent value="users">
             <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>User Management</CardTitle>
-                        <CardDescription>
-                            View, add, edit, and remove users.
-                        </CardDescription>
-                    </div>
-                    <Button onClick={handleAddNew}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Add New User
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    {!isProfileLoading && isAdmin && <UserTable onEdit={handleEdit} />}
-                </CardContent>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>User Management</CardTitle>
+                  <CardDescription>
+                    View, add, edit, and remove users.
+                  </CardDescription>
+                </div>
+                <Button onClick={handleAddNew}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add New User
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <UserTable onEdit={handleEdit} />
+              </CardContent>
             </Card>
-            </TabsContent>
+          </TabsContent>
         )}
         <TabsContent value="account">
           <Card>
@@ -211,16 +226,20 @@ export default function DashboardPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center py-16">
-              <p className="text-muted-foreground">Account settings UI to be implemented here.</p>
+              <p className="text-muted-foreground">
+                Account settings UI to be implemented here.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{selectedUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+            <DialogTitle>
+              {selectedUser ? 'Edit User' : 'Add New User'}
+            </DialogTitle>
             <DialogDescription>
               {selectedUser
                 ? "Update the user's details below."
