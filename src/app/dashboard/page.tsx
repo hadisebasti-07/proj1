@@ -70,12 +70,10 @@ export default function DashboardPage() {
   };
 
   const handleFormSubmit = () => {
-    console.log('DashboardPage: handleFormSubmit called. Closing dialog.');
     setIsFormOpen(false);
   };
 
   const handleOpenChange = (open: boolean) => {
-    console.log('DashboardPage: Dialog onOpenChange fired. New state:', open);
     setIsFormOpen(open);
     if (!open) {
       setSelectedUser(null);
