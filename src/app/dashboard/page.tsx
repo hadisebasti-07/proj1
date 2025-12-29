@@ -64,8 +64,9 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const isAdmin = userProfile?.role === 'admin';
+  // We must wait for the profile to load before determining the role.
   const isLoading = isUserLoading || isProfileLoading;
+  const isAdmin = userProfile?.role === 'admin';
   
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
