@@ -35,7 +35,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits.'),
-  role: z.enum(['customer', 'provider']),
+  role: z.enum(['customer', 'provider', 'admin']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,38 +53,32 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: user
-      ? {
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role as 'customer' | 'provider',
-        }
-      : {
-          name: '',
-          email: '',
-          phone: '',
-          role: 'customer',
-        },
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      role: 'customer',
+    },
   });
-  
+
   React.useEffect(() => {
     if (user) {
-        form.reset({
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role as 'customer' | 'provider',
-        });
+      form.reset({
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      });
     } else {
-        form.reset({
-          name: '',
-          email: '',
-          phone: '',
-          role: 'customer',
-        });
+      form.reset({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'customer',
+      });
     }
-  }, [user, form]);
+  }, [user, form.reset]);
+
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
@@ -191,6 +185,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                 <SelectContent>
                   <SelectItem value="customer">Customer</SelectItem>
                   <SelectItem value="provider">Provider</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
