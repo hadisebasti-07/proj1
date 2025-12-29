@@ -44,7 +44,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Admins can read, create, update, and delete any user document
-      allow read, write: if isAdmin();
+      allow list, write: if isAdmin();
       
       // Logged-in users can create their own user document
       allow create: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnCreate();

@@ -195,7 +195,7 @@ export default function DashboardPage() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    <UserTable onEdit={handleEdit} />
+                    {isAdmin && <UserTable onEdit={handleEdit} />}
                 </CardContent>
             </Card>
             </TabsContent>
