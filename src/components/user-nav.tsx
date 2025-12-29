@@ -13,14 +13,25 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { LayoutGrid, LogOut, User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
+import type { User as UserType } from '@/lib/types';
+
 
 export function UserNav() {
   const { user } = useUser();
   const auth = useAuth();
+  const firestore = useFirestore();
   const router = useRouter();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: userProfile } = useDoc<UserType>(userDocRef);
+
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   
   const handleLogout = () => {
@@ -30,6 +41,7 @@ export function UserNav() {
 
   const displayName = user?.displayName || user?.email || 'User';
   const displayEmail = user?.email || '';
+  const isAdmin = userProfile?.role === 'admin';
 
   return (
     <DropdownMenu>
@@ -64,13 +76,14 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
-          {/* This link is now always visible to allow the first admin to be created */}
-          <DropdownMenuItem asChild>
-            <Link href="/admin">
-              <Shield className="mr-2 h-4 w-4" />
-              <span>Admin</span>
-            </Link>
-          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin</span>
+              </Link>
+            </DropdownMenuItem>
+           )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
@@ -81,3 +94,5 @@ export function UserNav() {
     </DropdownMenu>
   );
 }
+
+    

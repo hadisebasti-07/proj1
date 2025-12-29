@@ -2,31 +2,23 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Rules for the 'users' collection
-    match /users/{userId} {
-      // Any authenticated user can read their own profile.
-      // Admins can read any user profile.
-      allow get: if request.auth.uid == userId || request.auth.token.admin == true;
 
-      // Only admins (with a custom claim) can list all users.
-      allow list: if request.auth.token.admin == true;
-      
-      // An authenticated user can create their own profile.
-      // Admins can create new user profiles.
-      allow create: if request.auth.uid == userId || request.auth.token.admin == true;
-      
-      // A user can update their own profile.
-      // Admins can update any user profile.
-      allow update: if request.auth.uid == userId || request.auth.token.admin == true;
-      
-      // Only admins can delete users.
-      allow delete: if request.auth.token.admin == true;
+    function isUserAdmin(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
+    }
+    
+    match /users/{userId} {
+      allow get: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow list: if isUserAdmin(request.auth.uid);
+      allow create: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow update: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
+      allow delete: if isUserAdmin(request.auth.uid);
     }
 
-    // Fallback for any other collections - deny all access
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
+    

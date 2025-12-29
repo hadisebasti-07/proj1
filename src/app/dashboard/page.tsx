@@ -38,16 +38,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
   
-  const [isAdmin, setIsAdmin] = React.useState(false);
-  const [isClaimsLoading, setIsClaimsLoading] = React.useState(true);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
@@ -56,16 +62,11 @@ export default function DashboardPage() {
   React.useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/auth/login');
-    } else if (user) {
-      setIsClaimsLoading(true);
-      user.getIdTokenResult(true).then((idTokenResult) => {
-        setIsAdmin(idTokenResult.claims.admin === true);
-        setIsClaimsLoading(false);
-      });
     }
   }, [user, isUserLoading, router]);
 
-  const isLoading = isUserLoading || isClaimsLoading;
+  const isAdmin = userProfile?.role === 'admin';
+  const isLoading = isUserLoading || isProfileLoading;
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -189,7 +190,9 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        {isAdmin && <TabsContent value="users">
+        
+        <TabsContent value="users">
+          {isAdmin ? (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -207,7 +210,21 @@ export default function DashboardPage() {
                 <UserTable onEdit={handleEdit} />
               </CardContent>
             </Card>
-          </TabsContent>}
+          ) : (
+             <Card>
+                <CardHeader>
+                  <CardTitle>Access Denied</CardTitle>
+                  <CardDescription>
+                    You do not have permission to view this page.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <p>Only administrators can manage users.</p>
+                </CardContent>
+             </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="account">
           <Card>
             <CardHeader>
@@ -243,3 +260,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
