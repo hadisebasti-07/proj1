@@ -24,11 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, useFirestore } from '@/firebase';
-import {
-  setDocumentNonBlocking,
-  updateDocumentNonBlocking,
-} from '@/firebase/non-blocking-updates';
-import { collection, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, serverTimestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
 import type { User } from '@/lib/types';
 
 const formSchema = z.object({
@@ -53,32 +49,21 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      role: 'customer',
-    },
-  });
-
-  React.useEffect(() => {
-    if (user) {
-      form.reset({
+    // Use defaultValues to initialize the form.
+    // This is the correct approach and avoids complex useEffect hooks.
+    // The key ensures the form re-initializes when we switch between editing different users.
+    defaultValues: user ? {
         name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
-      });
-    } else {
-      form.reset({
+    } : {
         name: '',
         email: '',
         phone: '',
         role: 'customer',
-      });
-    }
-  }, [user, form.reset]);
-
+    },
+  });
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
@@ -93,9 +78,9 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
     try {
       if (user) {
-        // Update existing user
+        // Update existing user - use a standard awaited update
         const userDoc = doc(firestore, 'users', user.uid);
-        updateDocumentNonBlocking(userDoc, data);
+        await updateDoc(userDoc, data);
         toast({
           title: 'User Updated',
           description: `Details for ${data.name} have been updated.`,
@@ -105,16 +90,17 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         // This is a simplified example for adding from the admin panel.
         const newUid = doc(collection(firestore, 'id-generator')).id; // Generate a new UID
         const userDoc = doc(firestore, 'users', newUid);
-        setDocumentNonBlocking(userDoc, {
+        await setDoc(userDoc, {
           ...data,
           uid: newUid, 
           createdAt: serverTimestamp(),
-        }, { merge: false });
+        });
         toast({
           title: 'User Added',
           description: `${data.name} has been added to the system.`,
         });
       }
+      // Only call this on success, after the await is complete.
       onFormSubmit();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -124,6 +110,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         description: 'An unexpected error occurred.',
       });
     } finally {
+      // This will run regardless of success or failure.
       setIsSubmitting(false);
     }
   }
