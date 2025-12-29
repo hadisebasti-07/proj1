@@ -104,6 +104,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
+      console.log('UserForm: Update successful. Calling onFormSubmit.');
       onFormSubmit(); // Signal success to the parent
     } catch (error) {
       console.error('Error submitting form:', error);

@@ -69,12 +69,13 @@ export default function DashboardPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSubmit = () => {
+    console.log('DashboardPage: handleFormSubmit called. Closing dialog.');
     setIsFormOpen(false);
-    // The onOpenChange handler will clear the selected user.
   };
 
   const handleOpenChange = (open: boolean) => {
+    console.log('DashboardPage: Dialog onOpenChange fired. New state:', open);
     setIsFormOpen(open);
     if (!open) {
       setSelectedUser(null);
@@ -241,7 +242,7 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
+            <UserForm user={selectedUser} onFormSubmit={handleFormSubmit} />
           )}
         </DialogContent>
       </Dialog>
