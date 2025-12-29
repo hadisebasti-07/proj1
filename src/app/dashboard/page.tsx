@@ -69,21 +69,21 @@ export default function DashboardPage() {
     setIsFormOpen(true);
   };
 
+  // This is now the single source of truth for handling the dialog's open state.
   const onOpenChange = (open: boolean) => {
-    // This is now the single source of truth for closing the dialog.
+    setIsFormOpen(open);
+    // If the dialog is closing, we must clear the selected user.
     if (!open) {
-      setIsFormOpen(false);
       setSelectedUser(null);
-    } else {
-      setIsFormOpen(true);
     }
   };
-
+  
+  // This function is called by the form on successful submission.
   const handleFormSuccess = () => {
-    // This function is called by the form on successful submission.
     // It signals that the dialog should close.
     setIsFormOpen(false);
   };
+
 
   if (isLoading) {
     return (
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
-
+      
       <Dialog open={isFormOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
