@@ -49,21 +49,20 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const adminRoleDocRef = useMemoFirebase(() => {
+  const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'roles_admin', user.uid);
+    return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: adminRole, isLoading: isAdminRoleLoading } =
-    useDoc(adminRoleDocRef);
+  const { data: userProfile, isLoading: isUserProfileLoading } = useDoc<UserType>(userDocRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
   );
 
-  const isLoading = isUserLoading || isAdminRoleLoading;
-  const isAdmin = !isLoading && adminRole !== null;
+  const isLoading = isUserLoading || isUserProfileLoading;
+  const isAdmin = !isLoading && userProfile?.role === 'admin';
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -85,12 +84,12 @@ export default function DashboardPage() {
     setIsFormOpen(false);
     setSelectedUser(null);
   };
-
+  
   const makeAdmin = async () => {
     if (!user || !firestore) return;
     try {
-      const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
-      await setDoc(adminRoleRef, { isAdmin: true });
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(userRef, { role: 'admin' }, { merge: true });
 
       toast({
         title: 'Admin Role Granted',
@@ -257,11 +256,11 @@ export default function DashboardPage() {
                   <h4 className="font-semibold">Admin Access</h4>
                   <p className="text-sm text-muted-foreground mt-1 mb-3">
                     To view the User Management tab, you need admin privileges.
-                    Click the button below to grant them to your account.
+                    Click the button below to grant them to your account. This is a one-time action.
                   </p>
                   <Button onClick={makeAdmin}>
                     <Shield className="mr-2 h-4 w-4" />
-                    Make Me Admin (One-Time Action)
+                    Make Me Admin
                   </Button>
                 </div>
               )}
