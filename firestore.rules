@@ -1,8 +1,36 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // Helper functions
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuth() && request.auth.uid == userId;
+    }
+    
+    function getUserData(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isAdmin() {
+      return isAuth() && getUserData(request.auth.uid).role == 'admin';
+    }
+
+    // Rules for the 'users' collection
+    match /users/{userId} {
+      // Allow create only if the user is creating their own document.
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      // Allow read for owners and admins.
+      allow read: if isOwner(userId) || isAdmin();
+      // Allow update for owners and admins.
+      allow update: if isOwner(userId) || isAdmin();
+      // Allow delete only for admins.
+      allow delete: if isAdmin();
+      // Admins can list all users.
+      allow list: if isAdmin();
     }
   }
 }
