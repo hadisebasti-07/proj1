@@ -70,6 +70,12 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
+  React.useEffect(() => {
+    if (userProfile) {
+      console.log('Current user role:', userProfile.role);
+    }
+  }, [userProfile]);
+
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
     setIsFormOpen(true);
