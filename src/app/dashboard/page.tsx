@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
   React.useEffect(() => {
     if (userProfile) {
-      console.log('Current user role:', userProfile.role);
+      console.log('Current user profile data:', userProfile);
     }
   }, [userProfile]);
 
