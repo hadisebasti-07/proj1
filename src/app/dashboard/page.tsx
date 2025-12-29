@@ -72,13 +72,14 @@ export default function DashboardPage() {
   const handleFormSubmit = () => {
     setIsFormOpen(false);
   };
-
+  
   const handleOpenChange = (open: boolean) => {
     setIsFormOpen(open);
     if (!open) {
       setSelectedUser(null);
     }
   };
+
 
   if (isLoading) {
     return (
