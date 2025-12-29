@@ -69,6 +69,7 @@ export default function DashboardPage() {
     if (userProfile) {
       setIsAdmin(userProfile.role === 'admin');
     } else {
+      // If there's no profile, they are not an admin.
       setIsAdmin(false);
     }
   }, [userProfile]);
