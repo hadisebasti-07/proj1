@@ -115,7 +115,7 @@ export function UserTable({ onEdit }: UserTableProps) {
                           <span>Edit</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(user.id, user.name)}
+                          onClick={() => handleDelete(user.uid, user.name)}
                           className="text-destructive"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

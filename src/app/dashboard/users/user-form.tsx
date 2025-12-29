@@ -25,7 +25,7 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, useFirestore } from '@/firebase';
 import {
-  addDocumentNonBlocking,
+  setDocumentNonBlocking,
   updateDocumentNonBlocking,
 } from '@/firebase/non-blocking-updates';
 import { collection, serverTimestamp, doc } from 'firebase/firestore';
@@ -96,12 +96,11 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         return;
     }
     setIsSubmitting(true);
-    const usersCollection = collection(firestore, 'users');
 
     try {
       if (user) {
         // Update existing user
-        const userDoc = doc(firestore, 'users', user.id);
+        const userDoc = doc(firestore, 'users', user.uid);
         updateDocumentNonBlocking(userDoc, data);
         toast({
           title: 'User Updated',
@@ -109,15 +108,14 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         });
       } else {
         // Add new user - NOTE: This doesn't create an Auth user.
-        // This is a simplified example. In a real app, you'd likely
-        // have a more complex user creation flow.
-        const newUid = new Date().getTime().toString();
+        // This is a simplified example for adding from the admin panel.
+        const newUid = doc(collection(firestore, 'id-generator')).id; // Generate a new UID
         const userDoc = doc(firestore, 'users', newUid);
-        addDocumentNonBlocking(usersCollection, {
+        setDocumentNonBlocking(userDoc, {
           ...data,
           uid: newUid, 
           createdAt: serverTimestamp(),
-        });
+        }, { merge: false });
         toast({
           title: 'User Added',
           description: `${data.name} has been added to the system.`,
@@ -159,7 +157,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="john.doe@example.com" {...field} />
+                <Input placeholder="john.doe@example.com" {...field} disabled={!!user} />
               </FormControl>
               <FormMessage />
             </FormItem>
