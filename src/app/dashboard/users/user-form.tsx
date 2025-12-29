@@ -35,7 +35,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits.'),
-  role: z.enum(['customer', 'provider', 'admin']),
+  role: z.enum(['customer', 'provider']),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -58,7 +58,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: user.role as 'customer' | 'provider' | 'admin',
+          role: user.role as 'customer' | 'provider',
         }
       : {
           name: '',
@@ -74,7 +74,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           name: user.name,
           email: user.email,
           phone: user.phone,
-          role: user.role as 'customer' | 'provider' | 'admin',
+          role: user.role as 'customer' | 'provider',
         });
     } else {
         form.reset({
@@ -191,7 +191,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                 <SelectContent>
                   <SelectItem value="customer">Customer</SelectItem>
                   <SelectItem value="provider">Provider</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -206,3 +205,5 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
     </Form>
   );
 }
+
+    
