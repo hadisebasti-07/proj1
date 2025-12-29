@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import * as React from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { LayoutGrid, LogOut, User } from 'lucide-react';
+import { LayoutGrid, LogOut, User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
@@ -21,6 +22,16 @@ export function UserNav() {
   const auth = useAuth();
   const router = useRouter();
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
+  const [isAdmin, setIsAdmin] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      user.getIdTokenResult().then((idTokenResult) => {
+        const claims = idTokenResult.claims;
+        setIsAdmin(claims.admin === true);
+      });
+    }
+  }, [user]);
 
   const handleLogout = () => {
     signOut(auth);
@@ -63,6 +74,14 @@ export function UserNav() {
               <span>Profile</span>
             </Link>
           </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <Shield className="mr-2 h-4 w-4" />
+                <span>Admin</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

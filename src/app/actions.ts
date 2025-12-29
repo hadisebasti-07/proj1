@@ -2,6 +2,42 @@
 
 import { generateServiceListingDescription } from '@/ai/flows/generate-service-listing-description';
 import { summarizeServiceReviews } from '@/ai/flows/summarize-service-reviews';
+import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, App } from 'firebase-admin/app';
+
+// This is a simplified, non-secure way to initialize Firebase Admin.
+// In a real production app, you would use service account credentials
+// securely managed via environment variables or a secret manager.
+function initializeAdminApp(): App {
+  if (getApps().length > 0) {
+    return getApps()[0];
+  }
+  // This will automatically use the GOOGLE_APPLICATION_CREDENTIALS
+  // environment variable if it's set.
+  return initializeApp();
+}
+
+export async function setAdminClaim(params: {
+  email: string;
+}): Promise<{ success: boolean; error: string | null }> {
+  try {
+    const adminApp = initializeAdminApp();
+    const auth = getAuth(adminApp);
+    const user = await auth.getUserByEmail(params.email);
+    
+    // Set the custom claim
+    await auth.setCustomUserClaims(user.uid, { admin: true });
+
+    return { success: true, error: null };
+  } catch (e: any) {
+    console.error('Error setting admin claim:', e);
+    return {
+      success: false,
+      error: e.message || 'An unknown error occurred.',
+    };
+  }
+}
+
 
 export async function getReviewSummary(
   reviews: string[]

@@ -52,6 +52,7 @@ export default function DashboardPage() {
     [user, firestore]
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
@@ -64,9 +65,16 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  // We must wait for the profile to load before determining the role.
+  React.useEffect(() => {
+    if (user) {
+      user.getIdTokenResult().then((idTokenResult) => {
+        const claims = idTokenResult.claims;
+        setIsAdmin(claims.admin === true);
+      });
+    }
+  }, [user]);
+
   const isLoading = isUserLoading || isProfileLoading;
-  const isAdmin = userProfile?.role === 'admin';
   
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -191,7 +199,7 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
         {isAdmin && (
-          <TabsContent value="users">
+           <TabsContent value="users">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -206,7 +214,7 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                <UserTable onEdit={handleEdit} />
+                {isAdmin ? <UserTable onEdit={handleEdit} /> : <p>You do not have permission to view users.</p>}
               </CardContent>
             </Card>
           </TabsContent>
