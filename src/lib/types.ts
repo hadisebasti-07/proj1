@@ -51,6 +51,7 @@ export type User = {
     name: string;
     email: string;
     phone: string;
-    role: string;
+    // role is not used for authorization, just for UI display
+    role: 'customer' | 'provider' | 'admin';
     createdAt: Timestamp;
 }

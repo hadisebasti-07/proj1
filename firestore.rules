@@ -11,20 +11,21 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // This function now checks the 'role' field on the user's own profile document.
-    function isUserAdmin() {
-      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
-
+    
     match /users/{userId} {
       allow get: if isSignedIn();
-      // Allow listing if the requesting user is an admin.
-      allow list: if isUserAdmin();
-      // A user can create their own profile, but cannot set their role to admin upon creation.
-      allow create: if isOwner(userId) && request.resource.data.role != 'admin';
-      // An admin can update any user. A user can update their own profile, but cannot change their own role.
-      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role || isUserAdmin();
-      allow delete: if isOwner(userId) || isUserAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId);
+      // Admin can update any user. A user can update their own profile.
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /roles_admin/{userId} {
+      allow read, write: if false;
     }
   }
 }
