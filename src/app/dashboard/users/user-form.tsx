@@ -63,14 +63,10 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    // The form is now created with the correct default values each time.
+    // The useEffect hook is no longer needed.
     defaultValues: user || defaultValues,
   });
-
-  React.useEffect(() => {
-    // Reset the form whenever the 'user' prop changes.
-    // This ensures the form is correctly populated when editing different users.
-    form.reset(user || defaultValues);
-  }, [user, form]);
 
   async function onSubmit(data: FormData) {
     if (!authUser) {

@@ -70,7 +70,8 @@ export default function DashboardPage() {
   };
 
   const handleFormSuccess = () => {
-    // This function signals the form was submitted, so we close the dialog.
+    // This is called from the form on successful submission.
+    // It signals that we should close the dialog.
     setIsFormOpen(false);
   };
 
@@ -243,7 +244,10 @@ export default function DashboardPage() {
                 : 'Enter the details for the new user.'}
             </DialogDescription>
           </DialogHeader>
-          <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
+          {/* Conditionally render the form to ensure it unmounts cleanly */}
+          {isFormOpen && (
+            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
+          )}
         </DialogContent>
       </Dialog>
     </div>
