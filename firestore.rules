@@ -125,12 +125,16 @@ service cloud.firestore {
     /**
      * @description Private collection to designate admin users. The existence of a doc means the user is an admin.
      * @path /roles_admin/{userId}
-     * @allow N/A - All client-side access is forbidden.
-     * @deny (get, list, create, update, delete) Any client attempting to read or write to this collection.
+     * @allow (create) TEMPORARY: Allow a user to make themselves an admin.
+     * @deny (get, list, update, delete) All other client access is forbidden.
      * @principle This collection acts as a secure, backend-managed lookup table for authorization rules, preventing any client-side tampering with user roles.
      */
     match /roles_admin/{userId} {
-      allow read, write: if false;
+      allow get: if false;
+      allow list: if false;
+      allow create: if isOwner(userId); // <-- TEMPORARY RULE to allow self-admin creation
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

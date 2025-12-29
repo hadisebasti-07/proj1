@@ -49,19 +49,21 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const userDocRef = useMemoFirebase(() => {
+  const adminRoleDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
+    return doc(firestore, 'roles_admin', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userProfile, isLoading: isProfileLoading } =
-    useDoc<UserType>(userDocRef);
+  const { data: adminRole, isLoading: isAdminRoleLoading } =
+    useDoc(adminRoleDocRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(null);
+  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
+    null
+  );
 
-  const isLoading = isUserLoading || isProfileLoading;
-  const isAdmin = !isLoading && userProfile?.role === 'admin';
+  const isLoading = isUserLoading || isAdminRoleLoading;
+  const isAdmin = !isLoading && adminRole !== null;
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -87,36 +89,23 @@ export default function DashboardPage() {
   const makeAdmin = async () => {
     if (!user || !firestore) return;
     try {
-      // Create a document in /users/{userId} with role: 'admin'
-      // This will satisfy the `isAdmin` function in your security rules.
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(
-        userRef,
-        {
-          uid: user.uid,
-          email: user.email,
-          name: user.displayName || user.email,
-          phone: '',
-          role: 'admin',
-          createdAt: new Date(),
-        },
-        { merge: true }
-      );
+      const adminRoleRef = doc(firestore, 'roles_admin', user.uid);
+      await setDoc(adminRoleRef, { isAdmin: true });
 
       toast({
         title: 'Admin Role Granted',
-        description: 'You are now an admin. The page will reload.',
+        description:
+          'You are now an admin. The page will reload to reflect the changes.',
       });
-      
+
       // Force a reload to re-evaluate the user's role
       window.location.reload();
-
     } catch (error) {
       console.error('Error making admin:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not grant admin role.',
+        description: 'Could not grant admin role. Check console and security rules.',
       });
     }
   };
@@ -264,9 +253,12 @@ export default function DashboardPage() {
                 Account settings UI to be implemented here.
               </p>
               {!isAdmin && (
-                <div className='max-w-md mx-auto p-4 border rounded-lg bg-secondary/30'>
-                  <h4 className='font-semibold'>Admin Access</h4>
-                  <p className='text-sm text-muted-foreground mt-1 mb-3'>To view the User Management tab, you need admin privileges. Click the button below to grant them to your account.</p>
+                <div className="max-w-md mx-auto p-4 border rounded-lg bg-secondary/30">
+                  <h4 className="font-semibold">Admin Access</h4>
+                  <p className="text-sm text-muted-foreground mt-1 mb-3">
+                    To view the User Management tab, you need admin privileges.
+                    Click the button below to grant them to your account.
+                  </p>
                   <Button onClick={makeAdmin}>
                     <Shield className="mr-2 h-4 w-4" />
                     Make Me Admin (One-Time Action)
