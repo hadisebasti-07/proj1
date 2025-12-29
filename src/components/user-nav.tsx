@@ -22,18 +22,7 @@ export function UserNav() {
   const auth = useAuth();
   const router = useRouter();
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    if (user) {
-      // Force refresh the token to get the latest claims.
-      user.getIdTokenResult(true).then((idTokenResult) => {
-        const claims = idTokenResult.claims;
-        setIsAdmin(claims.admin === true);
-      });
-    }
-  }, [user]);
-
+  
   const handleLogout = () => {
     signOut(auth);
     router.push('/auth/login');
