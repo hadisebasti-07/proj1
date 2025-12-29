@@ -40,7 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
@@ -49,20 +49,24 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const userDocRef = useMemoFirebase(() => {
+  // This is the correct check for admin status according to the security rules.
+  // It checks for the existence of a document in the /roles_admin collection.
+  const adminRoleDocRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'users', user.uid);
+    return doc(firestore, 'roles_admin', user.uid);
   }, [firestore, user?.uid]);
 
-  const { data: userProfile, isLoading: isUserProfileLoading } = useDoc<UserType>(userDocRef);
+  // We use useDoc to see if this document exists.
+  const { data: adminRoleDoc, isLoading: isAdminRoleLoading } = useDoc(adminRoleDocRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
   );
 
-  const isLoading = isUserLoading || isUserProfileLoading;
-  const isAdmin = !isLoading && userProfile?.role === 'admin';
+  const isLoading = isUserLoading || isAdminRoleLoading;
+  // A user is an admin if the document in /roles_admin exists.
+  const isAdmin = !isLoading && !!adminRoleDoc;
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -85,30 +89,6 @@ export default function DashboardPage() {
     setSelectedUser(null);
   };
   
-  const makeAdmin = async () => {
-    if (!user || !firestore) return;
-    try {
-      const userRef = doc(firestore, 'users', user.uid);
-      await setDoc(userRef, { role: 'admin' }, { merge: true });
-
-      toast({
-        title: 'Admin Role Granted',
-        description:
-          'You are now an admin. The page will reload to reflect the changes.',
-      });
-
-      // Force a reload to re-evaluate the user's role
-      window.location.reload();
-    } catch (error) {
-      console.error('Error making admin:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not grant admin role. Check console and security rules.',
-      });
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -254,14 +234,10 @@ export default function DashboardPage() {
               {!isAdmin && (
                 <div className="max-w-md mx-auto p-4 border rounded-lg bg-secondary/30">
                   <h4 className="font-semibold">Admin Access</h4>
-                  <p className="text-sm text-muted-foreground mt-1 mb-3">
+                  <p className="text-sm text-muted-foreground mt-1">
                     To view the User Management tab, you need admin privileges.
-                    Click the button below to grant them to your account. This is a one-time action.
+                    Please contact support to have your account upgraded.
                   </p>
-                  <Button onClick={makeAdmin}>
-                    <Shield className="mr-2 h-4 w-4" />
-                    Make Me Admin
-                  </Button>
                 </div>
               )}
             </CardContent>

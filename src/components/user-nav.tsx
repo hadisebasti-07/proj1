@@ -13,7 +13,7 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { LayoutGrid, LogOut, User, Shield } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useUser, useAuth, useDoc, useFirestore } from '@/firebase';
+import { useUser, useAuth, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import type { User as UserType } from '@/lib/types';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -26,15 +26,14 @@ export function UserNav() {
   const firestore = useFirestore();
   const router = useRouter();
 
-  const userDocRef = React.useMemo(() => {
+  const adminRoleDocRef = useMemoFirebase(() => {
     if (!user) return null;
-    return doc(firestore, 'users', user.uid);
+    return doc(firestore, 'roles_admin', user.uid);
   }, [user, firestore]);
 
-  const { data: userProfile } = useDoc<UserType>(userDocRef);
-  const isAdmin = userProfile?.role === 'admin';
+  const { data: adminRoleDoc } = useDoc(adminRoleDocRef);
+  const isAdmin = !!adminRoleDoc;
   
-
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
   
   const handleLogout = () => {
