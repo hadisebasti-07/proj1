@@ -66,13 +66,12 @@ export default function DashboardPage() {
   }, [user, isUserLoading, router]);
 
   React.useEffect(() => {
-    if (user) {
-      user.getIdTokenResult().then((idTokenResult) => {
-        const claims = idTokenResult.claims;
-        setIsAdmin(claims.admin === true);
-      });
+    if (userProfile) {
+      setIsAdmin(userProfile.role === 'admin');
+    } else {
+      setIsAdmin(false);
     }
-  }, [user]);
+  }, [userProfile]);
 
   const isLoading = isUserLoading || isProfileLoading;
   
@@ -214,7 +213,7 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {isAdmin ? <UserTable onEdit={handleEdit} /> : <p>You do not have permission to view users.</p>}
+                <UserTable onEdit={handleEdit} />
               </CardContent>
             </Card>
           </TabsContent>
