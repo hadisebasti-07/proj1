@@ -29,7 +29,7 @@ export default function UsersPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormClose = () => {
+  const handleFormSuccess = () => {
     setIsFormOpen(false);
   };
   
@@ -64,8 +64,7 @@ export default function UsersPage() {
           </DialogHeader>
           <UserForm 
             user={selectedUser} 
-            onFormSubmit={handleFormClose} 
-            open={isFormOpen}
+            onFormSubmit={handleFormSuccess} 
           />
         </DialogContent>
       </Dialog>

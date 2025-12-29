@@ -70,14 +70,16 @@ export default function DashboardPage() {
   };
 
   const handleFormSuccess = () => {
+    // This function signals the form was submitted, so we close the dialog.
     setIsFormOpen(false);
-    // The onOpenChange handler will now take care of resetting the selected user
   };
 
+  // This is the single source of truth for managing the dialog's open state.
   const handleOpenChange = (open: boolean) => {
     setIsFormOpen(open);
+    // If the dialog is closing (for any reason), reset the selected user.
     if (!open) {
-      setSelectedUser(null); // Reset user when dialog closes
+      setSelectedUser(null);
     }
   };
 
@@ -241,9 +243,7 @@ export default function DashboardPage() {
                 : 'Enter the details for the new user.'}
             </DialogDescription>
           </DialogHeader>
-          {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
-          )}
+          <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
         </DialogContent>
       </Dialog>
     </div>

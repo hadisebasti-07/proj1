@@ -53,10 +53,9 @@ const defaultValues = {
 interface UserFormProps {
   user: User | null;
   onFormSubmit: () => void;
-  open: boolean;
 }
 
-export function UserForm({ user, onFormSubmit, open }: UserFormProps) {
+export function UserForm({ user, onFormSubmit }: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user: authUser } = useFirebase();
@@ -68,10 +67,10 @@ export function UserForm({ user, onFormSubmit, open }: UserFormProps) {
   });
 
   React.useEffect(() => {
-    if (open) {
-      form.reset(user || defaultValues);
-    }
-  }, [user, open, form]);
+    // Reset the form whenever the 'user' prop changes.
+    // This ensures the form is correctly populated when editing different users.
+    form.reset(user || defaultValues);
+  }, [user, form]);
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
@@ -105,6 +104,7 @@ export function UserForm({ user, onFormSubmit, open }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
+      // Signal to the parent component that the form was submitted successfully.
       onFormSubmit();
     } catch (error) {
       console.error('Error submitting form:', error);
