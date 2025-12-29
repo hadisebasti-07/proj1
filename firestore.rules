@@ -1,51 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the requesting user has the 'admin' claim.
-    function isAdmin() {
-      return request.auth.token.admin == true;
-    }
-    
-    // Helper function to validate user data on creation
-    function hasValidUserDataOnCreate() {
-      let data = request.resource.data;
-      return (
-        data.uid == request.auth.uid &&
-        data.name is string && data.name.size() > 0 &&
-        data.email == request.auth.token.email &&
-        data.phone is string &&
-        data.role == 'customer' && // New users must have 'customer' role
-        data.createdAt == request.time
-      );
-    }
-    
-    // Helper function to validate user data on update
-    function hasValidUserDataOnUpdate() {
-      let data = request.resource.data;
-      return (
-        data.uid == resource.data.uid && // Prevent UID changes
-        data.name is string && data.name.size() > 0 &&
-        data.email == resource.data.email && // Prevent email changes
-        data.phone is string &&
-        data.role is string && data.role in ['customer', 'provider', 'admin'] &&
-        data.createdAt == resource.data.createdAt // Prevent createdAt changes
-      );
-    }
-
-    match /users/{userId} {
-      // Admins can list all users and write to any user document
-      allow list, write: if isAdmin();
-      
-      // A user can create their own user document
-      allow create: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnCreate();
-      
-      // A user can read and update their own user document
-      allow get, update: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnUpdate();
-    }
-
-    match /id-generator/{docId} {
-        // This collection is only used for generating UIDs on the client and should not be publicly accessible.
-        allow read, write: if false;
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
