@@ -1,8 +1,61 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    // Helper function to check if a user exists in the 'users' collection
+    function userExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // Helper function to get user data from the 'users' collection
+    function getUser(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // Helper function to check if the requesting user has the 'admin' role
+    function isAdmin() {
+      return userExists(request.auth.uid) && getUser(request.auth.uid).data.role == 'admin';
+    }
+    
+    // Helper function to validate user data on creation
+    function hasValidUserDataOnCreate() {
+      let data = request.resource.data;
+      return (
+        data.uid == request.auth.uid &&
+        data.name is string && data.name.size() > 0 &&
+        data.email == request.auth.token.email &&
+        data.phone is string &&
+        data.role == 'customer' && // New users must have 'customer' role
+        data.createdAt == request.time
+      );
+    }
+    
+    // Helper function to validate user data on update
+    function hasValidUserDataOnUpdate() {
+      let data = request.resource.data;
+      return (
+        data.uid == resource.data.uid && // Prevent UID changes
+        data.name is string && data.name.size() > 0 &&
+        data.email == resource.data.email && // Prevent email changes
+        data.phone is string &&
+        data.role is string && data.role in ['customer', 'provider', 'admin'] &&
+        data.createdAt == resource.data.createdAt // Prevent createdAt changes
+      );
+    }
+
+    match /users/{userId} {
+      // Admins can read, create, update, and delete any user document
+      allow read, write: if isAdmin();
+      
+      // Logged-in users can create their own user document
+      allow create: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnCreate();
+      
+      // Logged-in users can read and update their own user document
+      allow get, update: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnUpdate();
+    }
+
+    match /id-generator/{docId} {
+        // This collection is only used for generating UIDs on the client and should not be publicly accessible.
+        allow read, write: if false;
     }
   }
 }

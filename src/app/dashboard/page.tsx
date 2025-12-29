@@ -48,9 +48,9 @@ export default function DashboardPage() {
     const firestore = useFirestore();
 
     const userDocRef = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user?.uid || !firestore) return null;
         return doc(firestore, 'users', user.uid);
-    }, [firestore, user]);
+    }, [firestore, user?.uid]);
 
     const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
 
@@ -78,12 +78,17 @@ export default function DashboardPage() {
         setSelectedUser(null);
     };
 
-    if (isUserLoading || isProfileLoading || !user) {
+    if (isUserLoading || isProfileLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
         );
+    }
+    
+    if (!user) {
+        // This can happen briefly while redirecting.
+        return null;
     }
     
     const isAdmin = userProfile?.role === 'admin';
