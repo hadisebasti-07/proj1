@@ -8,15 +8,11 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Any authenticated user can list users.
-      // Individual user documents are still protected.
-      allow list: if request.auth != null;
-      allow get: if isOwner(userId);
+      allow list: if request.auth.token.admin == true;
+      allow get: if isOwner(userId) || request.auth.token.admin == true;
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      // Only admins should be able to delete users in a real app,
-      // but relaxing for now to avoid complexity.
-      allow delete: if isOwner(userId);
+      allow update: if isOwner(userId) || request.auth.token.admin == true;
+      allow delete: if request.auth.token.admin == true;
     }
 
     // A catch-all rule to prevent accidental access to other collections.

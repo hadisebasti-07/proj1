@@ -38,21 +38,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { doc } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [user, firestore]);
-
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isCheckingAdmin, setIsCheckingAdmin] = React.useState(true);
   
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
@@ -65,8 +58,21 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const isAdmin = userProfile?.role === 'admin';
-  const isLoading = isUserLoading || isProfileLoading;
+  React.useEffect(() => {
+    if (user) {
+      setIsCheckingAdmin(true);
+      user.getIdTokenResult().then((idTokenResult) => {
+        const claims = idTokenResult.claims;
+        setIsAdmin(claims.admin === true);
+        setIsCheckingAdmin(false);
+      });
+    } else {
+      setIsAdmin(false);
+      setIsCheckingAdmin(false);
+    }
+  }, [user]);
+
+  const isLoading = isUserLoading || isCheckingAdmin;
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -260,5 +266,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
