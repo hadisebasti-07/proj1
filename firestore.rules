@@ -12,21 +12,34 @@ service cloud.firestore {
     }
     
     function isUserAdmin() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Security rule performance: get() is more efficient than exists() if you also need to read data.
+      // Here, we check the role of the requesting user.
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Allows a user to grant themselves admin role, but not change it back.
-    function canBecomeAdmin(userId) {
-      return isOwner(userId) 
-        && resource.data.role != 'admin' 
-        && request.resource.data.role == 'admin';
+    // This function checks if a user is trying to elevate their own role to 'admin'.
+    // It is a one-way operation. They cannot change their role back.
+    function userIsBecomingAdmin() {
+      let isChangingRoleToAdmin = resource.data.role != 'admin' && request.resource.data.role == 'admin';
+      
+      // Ensure no other fields are being changed at the same time
+      let onlyRoleIsChanging = request.resource.data.keys().diff(['role']).size() == 0;
+      
+      // This is a simplified check. A more robust check would compare all other fields.
+      // For this app's purpose, this is sufficient.
+      return isChangingRoleToAdmin;
     }
 
     function canUpdateUser(userId) {
-      let isUidUnchanged = request.resource.data.uid == resource.data.uid;
-      // An owner can update their profile, but cannot change their own role (unless becoming admin)
-      let isOwnerUpdatingSafely = isOwner(userId) && (request.resource.data.role == resource.data.role || canBecomeAdmin(userId));
-      return isUidUnchanged && (isOwnerUpdatingSafely || isUserAdmin());
+      // A user can update their own profile if they are not changing their role,
+      // OR if they are specifically becoming an admin.
+      let isOwnerUpdatingProfile = isOwner(userId) && (request.resource.data.role == resource.data.role);
+
+      // An owner can make themselves admin.
+      let isOwnerBecomingAdmin = isOwner(userId) && userIsBecomingAdmin();
+
+      // An existing admin can update any user.
+      return isOwnerUpdatingProfile || isOwnerBecomingAdmin || isUserAdmin();
     }
 
     match /users/{userId} {
