@@ -71,10 +71,16 @@ export default function DashboardPage() {
   }, [user, isUserLoading, router]);
 
   React.useEffect(() => {
-    if (userProfile) {
-      console.log('Current user profile data:', userProfile);
+    // This will log the authentication state from the useUser() hook.
+    if (!isUserLoading) {
+      console.log('Auth user object (from useUser):', user);
     }
-  }, [userProfile]);
+    
+    // This will log the Firestore document data from the useDoc() hook.
+    if (userProfile) {
+      console.log('Current user profile data (from Firestore):', userProfile);
+    }
+  }, [user, userProfile, isUserLoading]);
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -233,14 +239,6 @@ export default function DashboardPage() {
               <p className="text-muted-foreground">
                 Account settings UI to be implemented here.
               </p>
-              {!isAdmin && (
-                <div className="max-w-md mx-auto p-4 border rounded-lg bg-secondary/30">
-                  <h4 className="font-semibold">Admin Access</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    To enable the 'Users' tab, please ask an existing administrator to grant you the admin role, or manually edit your 'role' field to 'admin' in the Firestore 'users' collection for your user document.
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
