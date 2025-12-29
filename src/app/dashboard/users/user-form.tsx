@@ -62,6 +62,16 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
       role: 'customer',
     },
   });
+  
+  React.useEffect(() => {
+    // This effect ensures that if a new user is selected for editing,
+    // the form resets to that new user's values.
+    // It doesn't run when `user` becomes `null` on close.
+    if (user) {
+      form.reset(user);
+    }
+  }, [user, form]);
+
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
