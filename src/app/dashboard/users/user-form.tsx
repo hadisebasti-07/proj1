@@ -63,8 +63,6 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    // The form is now created with the correct default values each time.
-    // The useEffect hook is no longer needed.
     defaultValues: user || defaultValues,
   });
 
@@ -100,8 +98,10 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
-      // Signal to the parent component that the form was submitted successfully.
-      onFormSubmit();
+      // Use setTimeout to defer closing the dialog, allowing focus to be managed correctly.
+      setTimeout(() => {
+        onFormSubmit();
+      }, 0);
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
@@ -111,7 +111,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           (error as Error).message || 'An unexpected error occurred.',
       });
     } finally {
-      setIsSubmitting(false);
+      // Don't set isSubmitting to false here, as the component will unmount.
     }
   }
 

@@ -60,8 +60,11 @@ export default function DashboardPage() {
   }, [user, isUserLoading, router]);
 
   const handleEdit = (user: UserType) => {
-    setSelectedUser(user);
-    setIsFormOpen(true);
+    // Use setTimeout to defer state updates, allowing Radix to manage focus correctly first.
+    setTimeout(() => {
+      setSelectedUser(user);
+      setIsFormOpen(true);
+    }, 0);
   };
 
   const handleAddNew = () => {
