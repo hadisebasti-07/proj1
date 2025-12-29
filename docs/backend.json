@@ -42,18 +42,6 @@
         "role",
         "createdAt"
       ]
-    },
-    "AdminRole": {
-      "title": "Admin Role",
-      "type": "object",
-      "description": "Represents a document indicating a user has an admin role.",
-      "properties": {
-         "uid": {
-          "type": "string",
-          "description": "The UID of the user who is an admin."
-        }
-      },
-      "required": ["uid"]
     }
   },
   "auth": {
@@ -72,22 +60,6 @@
             "$ref": "#/backend/entities/User"
           },
           "description": "Stores user profile information. Includes denormalized 'role' field for authorization independence. This allows list operations to be secured using role-based access control.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/roles_admin/{userId}",
-        "definition": {
-          "entityName": "AdminRole",
-          "schema": {
-            "$ref": "#/backend/entities/AdminRole"
-          },
-          "description": "Collection to track admin users based on the existence of a document with the user's ID. Existence implies the user is an admin. Used for DBAC (Database-driven Access Control).",
           "params": [
             {
               "name": "userId",

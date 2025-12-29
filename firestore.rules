@@ -11,9 +11,9 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(userId));
     }
     
-    // Helper function to check if the user is an admin by checking for their UID in the roles_admin collection
+    // Helper function to check if the requesting user has the 'admin' role in their own user document.
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     // Helper function to validate user data on creation
@@ -51,11 +51,6 @@ service cloud.firestore {
       
       // A user can read and update their own user document
       allow get, update: if request.auth != null && request.auth.uid == userId && hasValidUserDataOnUpdate();
-    }
-    
-    // Allow admins to manage the admin roles collection
-    match /roles_admin/{userId} {
-        allow read, write: if isAdmin();
     }
 
     match /id-generator/{docId} {
