@@ -53,7 +53,6 @@ export default function DashboardPage() {
   );
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userDocRef);
   
-  const [isAdmin, setIsAdmin] = React.useState(false);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
@@ -66,13 +65,7 @@ export default function DashboardPage() {
   }, [user, isUserLoading, router]);
 
   const isLoading = isUserLoading || isProfileLoading;
-
-  React.useEffect(() => {
-    // Only determine the admin status once the profile has loaded
-    if (!isLoading && userProfile) {
-      setIsAdmin(userProfile.role === 'admin');
-    }
-  }, [isLoading, userProfile]);
+  const isAdmin = !isLoading && userProfile?.role === 'admin';
 
   const handleEdit = (user: UserType) => {
     setSelectedUser(user);
@@ -211,7 +204,6 @@ export default function DashboardPage() {
                 </Button>
               </CardHeader>
               <CardContent>
-                {/* This is the critical change: Only render UserTable when confirmed as admin */}
                 {isAdmin ? (
                   <UserTable onEdit={handleEdit} />
                 ) : (

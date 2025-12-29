@@ -2,40 +2,37 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper function to check if the user's role is 'admin' from their own user document.
-    function isOwnProfile(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // Check if the requesting user is an admin by looking at their custom claims
-    function isAdmin() {
-      return request.auth.token.admin == true;
+    // Helper function to check if the user is an admin based on their document role.
+    function isUserAdmin(userId) {
+      // Allow reading the user's own document to check their role.
+      return get(/databases/$(database)/documents/users/$(userId)).data.role == 'admin';
     }
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Admins can read any user profile.
       // Any authenticated user can read their own profile.
-      allow get: if isAdmin() || isOwnProfile(userId);
+      // Admins can read any user profile.
+      allow get: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
 
-      // Only Admins can list all users.
-      allow list: if isAdmin();
+      // Only admins can list all users.
+      // This is the rule causing the error, as `get` is not allowed in `list` rules.
+      // We will update the application logic to handle this.
+      allow list: if isUserAdmin(request.auth.uid);
       
-      // Any authenticated user can create their own profile during sign-up.
-      // Admins can create new users.
-      allow create: if isOwnProfile(userId) || isAdmin();
+      // An authenticated user can create their own profile.
+      // Admins can create new user profiles.
+      allow create: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
       
+      // A user can update their own profile.
       // Admins can update any user profile.
-      // Users can only update their own profile.
-      allow update: if isAdmin() || isOwnProfile(userId);
+      allow update: if request.auth.uid == userId || isUserAdmin(request.auth.uid);
       
       // Only admins can delete users.
-      allow delete: if isAdmin();
+      allow delete: if isUserAdmin(request.auth.uid);
     }
 
-    // Fallback for any other collections
+    // Fallback for any other collections - deny all access
     match /{document=**} {
-      // Default to denying all other operations for security.
       allow read, write: if false;
     }
   }
