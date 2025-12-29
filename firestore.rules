@@ -15,9 +15,17 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Allows a user to grant themselves admin role, but not change it back.
+    function canBecomeAdmin(userId) {
+      return isOwner(userId) 
+        && resource.data.role != 'admin' 
+        && request.resource.data.role == 'admin';
+    }
+
     function canUpdateUser(userId) {
       let isUidUnchanged = request.resource.data.uid == resource.data.uid;
-      let isOwnerUpdatingSafely = isOwner(userId) && request.resource.data.role == resource.data.role;
+      // An owner can update their profile, but cannot change their own role (unless becoming admin)
+      let isOwnerUpdatingSafely = isOwner(userId) && (request.resource.data.role == resource.data.role || canBecomeAdmin(userId));
       return isUidUnchanged && (isOwnerUpdatingSafely || isUserAdmin());
     }
 
