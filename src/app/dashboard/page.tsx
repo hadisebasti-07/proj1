@@ -71,8 +71,15 @@ export default function DashboardPage() {
 
   const handleFormClose = () => {
     setIsFormOpen(false);
-    setSelectedUser(null);
   };
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Reset state when the dialog is closed.
+      setSelectedUser(null);
+    }
+    setIsFormOpen(open);
+  }
   
   if (isLoading) {
     return (
@@ -221,7 +228,7 @@ export default function DashboardPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>
@@ -233,7 +240,6 @@ export default function DashboardPage() {
                 : 'Enter the details for the new user.'}
             </DialogDescription>
           </DialogHeader>
-          {/* This ensures the form is only mounted when the dialog is open */}
           {isFormOpen && (
             <UserForm user={selectedUser} onFormSubmit={handleFormClose} />
           )}
