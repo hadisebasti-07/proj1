@@ -2,24 +2,9 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    // Allow individual user document access
+    // Allow any authenticated user to read and write to the users collection
     match /users/{userId} {
-      allow read, write: if isSignedIn();
-    }
-
-    // Allow any authenticated user to list all users
-    match /users {
-      allow list: if isSignedIn();
-    }
-
-    // Default deny all other documents
-    match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }
