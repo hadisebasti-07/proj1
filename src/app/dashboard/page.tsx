@@ -78,7 +78,9 @@ export default function DashboardPage() {
         setSelectedUser(null);
     };
 
-    if (isUserLoading || isProfileLoading) {
+    const isLoading = isUserLoading || isProfileLoading;
+
+    if (isLoading) {
         return (
             <div className="flex h-screen items-center justify-center">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -195,7 +197,7 @@ export default function DashboardPage() {
                     </Button>
                 </CardHeader>
                 <CardContent>
-                    {isAdmin && <UserTable onEdit={handleEdit} />}
+                    {!isProfileLoading && isAdmin && <UserTable onEdit={handleEdit} />}
                 </CardContent>
             </Card>
             </TabsContent>
