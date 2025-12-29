@@ -24,7 +24,13 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, useFirestore } from '@/firebase';
-import { collection, serverTimestamp, doc, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  serverTimestamp,
+  doc,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import type { User } from '@/lib/types';
 
 const formSchema = z.object({
@@ -49,33 +55,35 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: user ? {
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-    } : {
-        name: '',
-        email: '',
-        phone: '',
-        role: 'customer',
-    },
+    defaultValues: user
+      ? {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+        }
+      : {
+          name: '',
+          email: '',
+          phone: '',
+          role: 'customer',
+        },
   });
 
   async function onSubmit(data: FormData) {
     if (!authUser) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'You must be logged in to perform this action.',
-        });
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to perform this action.',
+      });
+      return;
     }
     setIsSubmitting(true);
 
     try {
       if (user) {
-        // Update existing user - use a standard awaited update
+        // Update existing user
         const userDoc = doc(firestore, 'users', user.uid);
         await updateDoc(userDoc, data);
         toast({
@@ -83,13 +91,12 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `Details for ${data.name} have been updated.`,
         });
       } else {
-        // Add new user - NOTE: This doesn't create an Auth user.
-        // This is a simplified example for adding from the admin panel.
-        const newUid = doc(collection(firestore, 'id-generator')).id; // Generate a new UID
+        // Add new user
+        const newUid = doc(collection(firestore, 'id-generator')).id;
         const userDoc = doc(firestore, 'users', newUid);
         await setDoc(userDoc, {
           ...data,
-          uid: newUid, 
+          uid: newUid,
           createdAt: serverTimestamp(),
         });
         toast({
@@ -97,13 +104,14 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           description: `${data.name} has been added to the system.`,
         });
       }
-      onFormSubmit();
+      onFormSubmit(); // Signal success to the parent
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'An unexpected error occurred.',
+        description:
+          (error as Error).message || 'An unexpected error occurred.',
       });
     } finally {
       setIsSubmitting(false);
@@ -133,7 +141,11 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="john.doe@example.com" {...field} disabled={!!user} />
+                <Input
+                  placeholder="john.doe@example.com"
+                  {...field}
+                  disabled={!!user}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

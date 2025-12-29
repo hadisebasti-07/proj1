@@ -69,18 +69,18 @@ export default function DashboardPage() {
     setIsFormOpen(true);
   };
 
-  const handleFormClose = () => {
+  const handleFormSuccess = () => {
     setIsFormOpen(false);
+    // The onOpenChange handler will clear the selected user.
   };
 
   const handleOpenChange = (open: boolean) => {
+    setIsFormOpen(open);
     if (!open) {
-      // Reset state when the dialog is closed.
       setSelectedUser(null);
     }
-    setIsFormOpen(open);
-  }
-  
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -241,7 +241,7 @@ export default function DashboardPage() {
             </DialogDescription>
           </DialogHeader>
           {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={handleFormClose} />
+            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
           )}
         </DialogContent>
       </Dialog>
