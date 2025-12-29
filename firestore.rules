@@ -11,42 +11,19 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
+    // This function now checks the 'role' field on the user's own profile document.
     function isUserAdmin() {
-      // Security rule performance: get() is more efficient than exists() if you also need to read data.
-      // Here, we check the role of the requesting user.
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-
-    // This function checks if a user is trying to elevate their own role to 'admin'.
-    // It is a one-way operation. They cannot change their role back.
-    function userIsBecomingAdmin() {
-      let isChangingRoleToAdmin = resource.data.role != 'admin' && request.resource.data.role == 'admin';
-      
-      // Ensure no other fields are being changed at the same time
-      let onlyRoleIsChanging = request.resource.data.keys().diff(['role']).size() == 0;
-      
-      // This is a simplified check. A more robust check would compare all other fields.
-      // For this app's purpose, this is sufficient.
-      return isChangingRoleToAdmin;
-    }
-
-    function canUpdateUser(userId) {
-      // A user can update their own profile if they are not changing their role,
-      // OR if they are specifically becoming an admin.
-      let isOwnerUpdatingProfile = isOwner(userId) && (request.resource.data.role == resource.data.role);
-
-      // An owner can make themselves admin.
-      let isOwnerBecomingAdmin = isOwner(userId) && userIsBecomingAdmin();
-
-      // An existing admin can update any user.
-      return isOwnerUpdatingProfile || isOwnerBecomingAdmin || isUserAdmin();
     }
 
     match /users/{userId} {
       allow get: if isSignedIn();
+      // Allow listing if the requesting user is an admin.
       allow list: if isUserAdmin();
+      // A user can create their own profile, but cannot set their role to admin upon creation.
       allow create: if isOwner(userId) && request.resource.data.role != 'admin';
-      allow update: if canUpdateUser(userId);
+      // An admin can update any user. A user can update their own profile.
+      allow update: if isOwner(userId) || isUserAdmin();
       allow delete: if isOwner(userId) || isUserAdmin();
     }
   }

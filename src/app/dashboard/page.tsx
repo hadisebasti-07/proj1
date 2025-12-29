@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { PlusCircle, Loader2, Shield } from 'lucide-react';
+import { PlusCircle, Loader2 } from 'lucide-react';
 import { UserTable } from './users/user-table';
 import { UserForm } from './users/user-form';
 import type { User as UserType } from '@/lib/types';
@@ -49,24 +49,20 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  // This is the correct check for admin status according to the security rules.
-  // It checks for the existence of a document in the /roles_admin collection.
-  const adminRoleDocRef = useMemoFirebase(() => {
+  const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
-    return doc(firestore, 'roles_admin', user.uid);
+    return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);
 
-  // We use useDoc to see if this document exists.
-  const { data: adminRoleDoc, isLoading: isAdminRoleLoading } = useDoc(adminRoleDocRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserType>(userProfileRef);
 
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
     null
   );
 
-  const isLoading = isUserLoading || isAdminRoleLoading;
-  // A user is an admin if the document in /roles_admin exists.
-  const isAdmin = !isLoading && !!adminRoleDoc;
+  const isLoading = isUserLoading || isProfileLoading;
+  const isAdmin = !isLoading && userProfile?.role === 'admin';
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -236,7 +232,7 @@ export default function DashboardPage() {
                   <h4 className="font-semibold">Admin Access</h4>
                   <p className="text-sm text-muted-foreground mt-1">
                     To view the User Management tab, you need admin privileges.
-                    Please contact support to have your account upgraded.
+                    Please have an existing admin grant you the role, or manually edit your user document in the Firestore console.
                   </p>
                 </div>
               )}
