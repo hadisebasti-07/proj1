@@ -23,7 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth, useFirestore } from '@/firebase';
+import { useFirebase, useFirestore } from '@/firebase';
 import {
   setDocumentNonBlocking,
   updateDocumentNonBlocking,
@@ -48,7 +48,7 @@ interface UserFormProps {
 export function UserForm({ user, onFormSubmit }: UserFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const { user: authUser } = useAuth();
+  const { user: authUser } = useFirebase();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm<FormData>({
