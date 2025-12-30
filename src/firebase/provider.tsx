@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { User as UserProfile } from '@/lib/types';
@@ -86,6 +86,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         if (firebaseUser) {
            setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, userError: null }));
         } else {
+           // If user logs out, reset everything and set loading to false.
            setUserAuthState({ user: null, userProfile: null, isUserLoading: false, isUserAdmin: false, userError: null });
         }
       },
@@ -97,65 +98,60 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     return () => unsubscribeAuth(); 
   }, [auth]); 
 
-  // Effect to subscribe to the user's profile and check for admin status
+  // Effect to subscribe to user's profile and admin status based on auth state
   useEffect(() => {
+    // If there's no user, reset user-specific data and stop.
     if (!firestore || !userAuthState.user) {
-        if (!userAuthState.user) {
-             setUserAuthState(prevState => ({ ...prevState, isUserLoading: false, isUserAdmin: false, userProfile: null }));
-        }
+      if (!userAuthState.user) {
+        // This ensures that on logout, loading is confirmed as false.
+        setUserAuthState(prevState => ({ ...prevState, isUserLoading: false, isUserAdmin: false, userProfile: null }));
+      }
       return;
     }
   
-    const userDocRef = doc(firestore, 'users', userAuthState.user.uid);
-    const adminRoleDocRef = doc(firestore, 'roles_admin', userAuthState.user.uid);
+    const { user } = userAuthState;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const adminRoleDocRef = doc(firestore, 'roles_admin', user.uid);
   
-    // Fetch both documents and update state once
-    const fetchData = async () => {
-      try {
-        const [userDoc, adminDoc] = await Promise.all([
-          getDoc(userDocRef),
-          getDoc(adminRoleDocRef)
-        ]);
+    // Keep track of whether initial data has been loaded from both snapshots
+    let profileLoaded = false;
+    let adminLoaded = false;
   
-        const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
-        const isAdmin = adminDoc.exists();
-        
-        setUserAuthState(prevState => ({
-            ...prevState,
-            userProfile: userProfileData,
-            isUserAdmin: isAdmin,
-            isUserLoading: false, // Loading is complete after both checks
-            userError: null
-        }));
-  
-      } catch (error: any) {
-        console.error("FirebaseProvider: Error fetching user data or admin status:", error);
-        setUserAuthState(prevState => ({
-          ...prevState,
-          userProfile: null,
-          isUserAdmin: false,
-          isUserLoading: false,
-          userError: error,
-        }));
+    const checkLoadingComplete = () => {
+      if (profileLoaded && adminLoaded) {
+        setUserAuthState(prevState => ({ ...prevState, isUserLoading: false }));
       }
     };
   
-    fetchData();
-  
-    // Optional: If you need realtime updates for the profile, you can still use onSnapshot
-    // but be careful about how it interacts with the initial loading state.
     const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-          setUserAuthState(prevState => ({ ...prevState, userProfile: doc.data() as UserProfile }));
-        } else {
-          setUserAuthState(prevState => ({ ...prevState, userProfile: null }));
-        }
-    });
-
-    const unsubscribeAdmin = onSnapshot(adminRoleDocRef, (doc) => {
-        setUserAuthState(prevState => ({...prevState, isUserAdmin: doc.exists() }));
+      setUserAuthState(prevState => ({
+        ...prevState,
+        userProfile: doc.exists() ? doc.data() as UserProfile : null
+      }));
+      profileLoaded = true;
+      checkLoadingComplete();
+    }, (error) => {
+      console.error("Error fetching user profile:", error);
+      setUserAuthState(prevState => ({ ...prevState, userError: error }));
+      profileLoaded = true;
+      checkLoadingComplete();
     });
   
+    const unsubscribeAdmin = onSnapshot(adminRoleDocRef, (doc) => {
+      setUserAuthState(prevState => ({
+        ...prevState,
+        isUserAdmin: doc.exists()
+      }));
+      adminLoaded = true;
+      checkLoadingComplete();
+    }, (error) => {
+      console.error("Error fetching admin status:", error);
+      setUserAuthState(prevState => ({ ...prevState, userError: error }));
+      adminLoaded = true;
+      checkLoadingComplete();
+    });
+  
+    // Cleanup function to unsubscribe from both listeners on component unmount or user change
     return () => {
       unsubscribeProfile();
       unsubscribeAdmin();
