@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot, collection, query, getDocs, limit } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { User as UserProfile } from '@/lib/types';
@@ -100,61 +100,51 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
 
   // Effect to subscribe to user's profile and admin status based on auth state
   useEffect(() => {
-    // If there's no user, reset user-specific data and stop.
     if (!firestore || !userAuthState.user) {
       if (!userAuthState.user) {
-        // This ensures that on logout, loading is confirmed as false.
         setUserAuthState(prevState => ({ ...prevState, isUserLoading: false, isUserAdmin: false, userProfile: null }));
       }
       return;
     }
-  
+
     const { user } = userAuthState;
     const userDocRef = doc(firestore, 'users', user.uid);
-    const adminRoleDocRef = doc(firestore, 'roles_admin', user.uid);
-  
-    // Keep track of whether initial data has been loaded from both snapshots
-    let profileLoaded = false;
-    let adminLoaded = false;
-  
-    const checkLoadingComplete = () => {
-      if (profileLoaded && adminLoaded) {
-        setUserAuthState(prevState => ({ ...prevState, isUserLoading: false }));
+    
+    // Check admin status by attempting a query only admins can make.
+    const checkAdminStatus = async () => {
+      const usersQuery = query(collection(firestore, 'users'), limit(1));
+      try {
+        await getDocs(usersQuery);
+        // If the query succeeds, the user is an admin.
+        setUserAuthState(prevState => ({ ...prevState, isUserAdmin: true }));
+      } catch (error) {
+        // If it fails, they are not an admin. This is expected for non-admins.
+        setUserAuthState(prevState => ({ ...prevState, isUserAdmin: false }));
       }
     };
   
+    // Subscribe to the user's profile document
     const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-      setUserAuthState(prevState => ({
-        ...prevState,
-        userProfile: doc.exists() ? doc.data() as UserProfile : null
-      }));
-      profileLoaded = true;
-      checkLoadingComplete();
+      const profileData = doc.exists() ? doc.data() as UserProfile : null;
+      // After getting the profile, check admin status.
+      checkAdminStatus().finally(() => {
+        // Only set loading to false after both checks are complete.
+        setUserAuthState(prevState => ({
+          ...prevState,
+          userProfile: profileData,
+          isUserLoading: false 
+        }));
+      });
     }, (error) => {
       console.error("Error fetching user profile:", error);
-      setUserAuthState(prevState => ({ ...prevState, userError: error }));
-      profileLoaded = true;
-      checkLoadingComplete();
+      // Still check admin status even if profile fails, then stop loading.
+      checkAdminStatus().finally(() => {
+        setUserAuthState(prevState => ({ ...prevState, userError: error, isUserLoading: false }));
+      });
     });
   
-    const unsubscribeAdmin = onSnapshot(adminRoleDocRef, (doc) => {
-      setUserAuthState(prevState => ({
-        ...prevState,
-        isUserAdmin: doc.exists()
-      }));
-      adminLoaded = true;
-      checkLoadingComplete();
-    }, (error) => {
-      console.error("Error fetching admin status:", error);
-      setUserAuthState(prevState => ({ ...prevState, userError: error }));
-      adminLoaded = true;
-      checkLoadingComplete();
-    });
-  
-    // Cleanup function to unsubscribe from both listeners on component unmount or user change
     return () => {
       unsubscribeProfile();
-      unsubscribeAdmin();
     };
   
   }, [userAuthState.user, firestore]);

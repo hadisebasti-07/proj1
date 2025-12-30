@@ -17,6 +17,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if isSignedIn();
+      // Only admins can list all users.
       allow list: if isAdmin();
       // An owner can create their own doc, or an admin can create any.
       allow create: if isOwner(userId) || isAdmin();
@@ -32,10 +33,9 @@ service cloud.firestore {
     }
 
     match /roles_admin/{userId} {
-      // Allow a user to read their own admin role document.
-      // Disallow list, create, update, delete for all.
-      allow get: if isOwner(userId);
-      allow list, write: if false;
+      // This collection is admin-managed. No client-side reads/writes are allowed
+      // by default. Admin status is checked using the exists() function in rules.
+      allow read, write: if false;
     }
   }
 }
