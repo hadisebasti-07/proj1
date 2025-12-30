@@ -11,11 +11,13 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
-  initiateEmailSignIn,
-  initiateEmailSignUp,
-} from '@/firebase/non-blocking-login';
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { doc, serverTimestamp, getFirestore } from 'firebase/firestore';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   formType: 'login' | 'signup';
@@ -52,30 +54,47 @@ export function UserAuthForm({
     setIsLoading(true);
     try {
       if (formType === 'login') {
-        initiateEmailSignIn(auth, data.email, data.password);
+        await signInWithEmailAndPassword(auth, data.email, data.password);
       } else {
-        initiateEmailSignUp(auth, data.email, data.password);
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        const user = userCredential.user;
+        const firestore = getFirestore(auth.app);
+        const userDocRef = doc(firestore, 'users', user.uid);
+
+        const newUser = {
+          uid: user.uid,
+          email: user.email,
+          displayName: user.email?.split('@')[0] || 'New User',
+          photoURL: user.photoURL || '',
+          role: 'customer',
+          createdAt: serverTimestamp(),
+        };
+        // This can remain non-blocking as it happens after successful auth
+        setDocumentNonBlocking(userDocRef, newUser, { merge: false });
       }
-      // Non-blocking, so we redirect immediately.
-      // The useUser hook will pick up the auth state change.
-      router.push('/');
+      
       toast({
         title:
           formType === 'login'
-            ? 'Signing in...'
-            : 'Creating account...',
+            ? 'Sign in successful!'
+            : 'Account created!',
         description: 'You will be redirected shortly.',
       });
+      // The redirect will happen automatically via the useUser hook listener
+      // No need for router.push here as it's handled globally
     } catch (error: any) {
-      setIsLoading(false);
+      // This will now correctly catch auth errors
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
         description:
-          error.message || 'An unexpected error occurred. Please try again.',
+          error.code === 'auth/invalid-credential' 
+          ? 'Invalid email or password. Please try again.'
+          : error.message || 'An unexpected error occurred. Please try again.',
       });
+    } finally {
+      setIsLoading(false);
     }
-    // Don't set isLoading to false here, as the page will redirect.
   }
 
   return (
