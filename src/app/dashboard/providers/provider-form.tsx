@@ -46,7 +46,7 @@ const formSchema = z.object({
   location: z.string().min(2, 'Location is required.'),
   photoUrl: z.string().url('Please enter a valid URL.').optional().or(z.literal('')),
   rating: z.coerce.number().min(0).max(5).default(0),
-  status: z.enum(['active', 'pending']),
+  status: z.enum(['active', 'pending', 'suspended', 'verified']),
   userId: z.string().min(1, 'Please select a user.'),
 });
 
@@ -251,6 +251,8 @@ export function ProviderForm({ provider, onFormSubmit }: ProviderFormProps) {
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -273,7 +275,7 @@ export function ProviderForm({ provider, onFormSubmit }: ProviderFormProps) {
                 <SelectContent>
                   {!isLoadingUsers && users?.map(user => (
                     <SelectItem key={user.uid} value={user.uid}>
-                      {user.name} ({user.email})
+                      {user.displayName} ({user.email})
                     </SelectItem>
                   ))}
                 </SelectContent>

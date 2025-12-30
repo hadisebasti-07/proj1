@@ -74,7 +74,7 @@
     "ProviderProfile": {
       "title": "Provider Profile",
       "type": "object",
-      "description": "Public-facing profile for a service provider, separate from their user auth data.",
+      "description": "Public-facing profile for a service provider, separate from their user auth data. The status of this profile is managed by administrators.",
       "properties": {
         "userId": { "type": "string", "description": "Reference to the User UID." },
         "displayName": { "type": "string" },
@@ -83,7 +83,7 @@
         "location": { "type": "string" },
         "photoUrl": { "type": "string", "format": "uri" },
         "rating": { "type": "number" },
-        "status": { "type": "string", "enum": ["draft", "active", "suspended", "verified"] },
+        "status": { "type": "string", "enum": ["draft", "active", "suspended", "verified"], "description": "The verification status of the provider, managed by admins." },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "displayName", "status", "createdAt"]

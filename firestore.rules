@@ -69,7 +69,13 @@ service cloud.firestore {
     // Provider public profiles
     match /providers/{providerId} {
       allow get, list: if true;
-      allow create, update, delete: if isAdmin() || isOwner(providerId);
+      allow create: if isAdmin();
+      
+      // An admin can update anything. A provider can only update their profile
+      // if they are NOT changing their own status.
+      allow update: if isAdmin() || (isOwner(providerId) && incomingData().status == existingData().status);
+
+      allow delete: if isAdmin();
     }
     
     // Provider Availability
