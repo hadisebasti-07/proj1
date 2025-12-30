@@ -27,7 +27,7 @@ service cloud.firestore {
     
     match /providers/{providerId} {
       allow read: if isSignedIn();
-      allow list: if isSignedIn();
+      allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
