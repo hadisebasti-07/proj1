@@ -133,7 +133,7 @@ export function AvailabilityForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="space-y-6">
             {daysOfWeek.map((day) => (
-                <DayAvailabilityControl key={day} day={day} control={form.control} />
+                <DayAvailabilityControl key={day} day={day} control={form.control} watch={form.watch} />
             ))}
         </div>
         <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
@@ -145,13 +145,13 @@ export function AvailabilityForm() {
   );
 }
 
-function DayAvailabilityControl({ day, control }: { day: typeof daysOfWeek[number], control: any }) {
+function DayAvailabilityControl({ day, control, watch }: { day: typeof daysOfWeek[number], control: any, watch: any }) {
     const { fields, append, remove } = useFieldArray({
       control,
       name: `weeklySchedule.${day}.slots`,
     });
 
-    const isEnabled = control.getValues().weeklySchedule[day].enabled;
+    const isEnabled = watch(`weeklySchedule.${day}.enabled`);
 
     return (
          <FormField
@@ -168,7 +168,7 @@ function DayAvailabilityControl({ day, control }: { day: typeof daysOfWeek[numbe
                         />
                     </FormControl>
                 </div>
-                 {field.value && (
+                 {isEnabled && (
                      <div className={cn("space-y-4 transition-opacity", !field.value && "opacity-50")}>
                         {fields.map((item, index) => (
                             <div key={item.id} className="flex items-end gap-4">
