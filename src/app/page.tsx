@@ -18,10 +18,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ServiceCard } from '@/components/service-card';
-import { categories, services } from '@/lib/data';
+import { categories } from '@/lib/data';
 import type { Service } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, limit } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ICONS: { [key: string]: React.ElementType } = {
   Wrench,
@@ -35,28 +37,66 @@ const ICONS: { [key: string]: React.ElementType } = {
   Default: Briefcase,
 };
 
+function ServicesSection({ services, isLoading }: { services: Service[] | null, isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="space-y-4">
+            <Skeleton className="h-[225px] w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (!services || services.length === 0) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <p className="text-lg">No services found matching your criteria.</p>
+        <p>Try adjusting your search or filters.</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {services.map((service) => (
+        <ServiceCard key={service.id} service={service} />
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(
-    'All'
-  );
-  const [filteredServices, setFilteredServices] = React.useState<Service[]>(services);
+  const [selectedCategory, setSelectedCategory] = React.useState<string>('All');
+  
+  const firestore = useFirestore();
 
-  React.useEffect(() => {
-    let newFilteredServices = services.filter((service) =>
+  const servicesQuery = useMemoFirebase(() => {
+    const baseQuery = collection(firestore, 'services');
+    if (selectedCategory && selectedCategory !== 'All') {
+      return query(baseQuery, where('category', '==', selectedCategory), limit(12));
+    }
+    return query(baseQuery, limit(12));
+  }, [firestore, selectedCategory]);
+
+  const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+
+  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-services');
+
+  const filteredServices = React.useMemo(() => {
+    if (!services) return [];
+    if (!searchTerm) return services;
+    return services.filter((service) =>
       service.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    if (selectedCategory && selectedCategory !== 'All') {
-      newFilteredServices = newFilteredServices.filter(
-        (service) => service.category === selectedCategory
-      );
-    }
-
-    setFilteredServices(newFilteredServices);
-  }, [searchTerm, selectedCategory]);
-  
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-services');
+  }, [services, searchTerm]);
 
   return (
     <div className="flex flex-col gap-8 md:gap-12">
@@ -135,18 +175,7 @@ export default function HomePage() {
             View All <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
-        {filteredServices.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredServices.map((service) => (
-              <ServiceCard key={service.id} service={service} />
-            ))}
-          </div>
-        ) : (
-           <div className="text-center py-16 text-muted-foreground">
-             <p className="text-lg">No services found matching your criteria.</p>
-             <p>Try adjusting your search or filters.</p>
-           </div>
-        )}
+        <ServicesSection services={filteredServices} isLoading={isLoading} />
       </section>
     </div>
   );

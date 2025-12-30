@@ -20,12 +20,10 @@ export type ProviderProfile = {
   createdAt: Timestamp;
 };
 
-export type Provider = {
+export type ProviderStub = {
   id: string;
   name: string;
   avatarUrl: string;
-  rating: number;
-  reviewsCount: number;
 };
 
 export type Review = {
@@ -43,12 +41,15 @@ export type Service = {
   category: string;
   price: number;
   priceUnit: 'hourly' | 'fixed';
-  provider: Provider;
-  imageUrl: string;
-  imageHint: string;
+  provider: ProviderStub;
+  imageUrl?: string;
+  imageHint?: string;
   rating: number;
   reviewsCount: number;
   reviews: Review[];
+  isActive: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 };
 
 export type Booking = {

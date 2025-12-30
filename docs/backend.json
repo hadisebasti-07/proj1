@@ -19,7 +19,15 @@
       "description": "A service offered by a provider.",
       "type": "object",
       "properties": {
-        "providerId": { "type": "string", "description": "UID of the user providing the service." },
+        "provider": { 
+          "type": "object", 
+          "description": "Denormalized provider info for display.",
+          "properties": {
+            "id": { "type": "string"},
+            "name": { "type": "string"},
+            "avatarUrl": { "type": "string"}
+          }
+        },
         "title": { "type": "string" },
         "description": { "type": "string" },
         "category": { "type": "string" },
@@ -29,7 +37,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["providerId", "title", "price", "isActive", "createdAt", "updatedAt"]
+      "required": ["provider", "title", "price", "isActive", "createdAt", "updatedAt"]
     },
     "Booking": {
       "title": "Booking",
@@ -132,11 +140,11 @@
         }
       },
       {
-        "path": "/users/{userId}/services/{serviceId}",
+        "path": "/services/{serviceId}",
         "definition": {
           "entityName": "Service",
           "schema": { "$ref": "#/backend/entities/Service" },
-          "description": "Services offered by a specific provider."
+          "description": "Top-level collection for all services for efficient querying."
         }
       },
        {

@@ -36,8 +36,9 @@ function Rating({ rating }: { rating: number }) {
 }
 
 export function ServiceCard({ service }: ServiceCardProps) {
-  const image = PlaceHolderImages.find((img) => img.imageUrl.includes(service.imageUrl));
-  const providerAvatar = PlaceHolderImages.find((img) => img.imageUrl.includes(service.provider.avatarUrl));
+  // Find a suitable placeholder based on hint, fallback to a generic one
+  const image = PlaceHolderImages.find((img) => service.imageHint && img.imageHint.includes(service.imageHint)) || PlaceHolderImages.find(img => img.id === 'hero-services');
+  const providerAvatar = service.provider.avatarUrl ? PlaceHolderImages.find((img) => img.imageUrl.includes(service.provider.avatarUrl)) : null;
 
   return (
     <Card className="flex flex-col overflow-hidden transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-xl">
@@ -69,8 +70,8 @@ export function ServiceCard({ service }: ServiceCardProps) {
           <div>
             <p className="font-semibold text-sm">{service.provider.name}</p>
             <div className="flex items-center text-xs text-muted-foreground">
-                <Rating rating={service.provider.rating} />
-                <span className="ml-2">({service.provider.reviewsCount} reviews)</span>
+                <Rating rating={service.rating} />
+                <span className="ml-2">({service.reviewsCount} reviews)</span>
             </div>
           </div>
         </div>

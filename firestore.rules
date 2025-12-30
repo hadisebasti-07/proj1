@@ -40,7 +40,8 @@ service cloud.firestore {
     
     // User Profiles
     match /users/{userId} {
-      allow get: if isSignedIn();
+      // A user can read their own profile, or an admin can.
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
 
       // A user can create their own profile. An admin can create any.
@@ -53,12 +54,13 @@ service cloud.firestore {
       allow delete: if isAdmin(); // Only admins can delete user profiles.
     }
     
-    // Services offered by a provider
-    match /users/{userId}/services/{serviceId} {
+    // Services are now in a top-level collection for easier querying.
+    match /services/{serviceId} {
         allow get, list: if true; // All services are public to view.
         
-        // Only the provider can create/update/delete their own services.
-        allow create, update, delete: if isOwner(userId);
+        // Only the provider who owns the service can manage it.
+        // We check the providerId field on the service document.
+        allow create, update, delete: if isOwner(incomingData().provider.id);
     }
 
     // Provider public profiles
@@ -80,9 +82,10 @@ service cloud.firestore {
       // A customer or provider can get a booking they are involved in.
       allow get: if isSignedIn() && (isOwner(existingData().customerId) || isOwner(existingData().providerId));
       
-      // Users can only list their own bookings, not all of them.
-      // This requires queries on the client side (e.g., where('customerId', '==', auth.uid))
-      allow list: if isSignedIn();
+      // IMPORTANT SECURITY FIX: Removed insecure `list` rule.
+      // Clients must query bookings with a 'where' clause (e.g., where('customerId', '==', auth.uid))
+      // which is implicitly allowed if the 'get' rule passes for each document in the result.
+      allow list: if false;
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);
@@ -103,7 +106,7 @@ service cloud.firestore {
     match /roles_admin/{userId} {
       // This collection is managed by backend/admins only.
       // No client-side reads or writes are allowed for listing/writing.
-      allow get: if isOwner(userId);
+      allow get: if isOwner(userId) || isAdmin();
       allow list, write: if false;
     }
   }

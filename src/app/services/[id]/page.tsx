@@ -1,8 +1,9 @@
+// This is a server component now
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Star, MessageSquare, Calendar, Shield } from 'lucide-react';
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
-import { services } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
   Card,
@@ -17,6 +18,26 @@ import { Separator } from '@/components/ui/separator';
 import { ReviewSummarizer } from './review-summarizer';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import type { Service, Review, ProviderProfile } from '@/lib/types';
+import { initializeFirebase } from '@/firebase/server-only';
+
+// Helper function to fetch data on the server
+async function getService(id: string): Promise<Service | null> {
+    const { firestore } = initializeFirebase();
+    const serviceRef = doc(firestore, 'services', id);
+    const serviceSnap = await getDoc(serviceRef);
+    if (!serviceSnap.exists()) {
+        return null;
+    }
+    return { id: serviceSnap.id, ...serviceSnap.data() } as Service;
+}
+
+// TODO: Replace with a real review fetching implementation
+const MOCK_REVIEWS: Review[] = [
+    { id: '1', author: 'John Doe', rating: 5, comment: 'Excellent work, very professional!', date: '2023-10-20' },
+    { id: '2', author: 'Jane Smith', rating: 4, comment: 'Good service, but a bit late.', date: '2023-10-18' },
+];
+
 
 function Rating({ rating, count }: { rating: number; count?: number }) {
   const fullStars = Math.floor(rating);
@@ -39,15 +60,19 @@ function Rating({ rating, count }: { rating: number; count?: number }) {
   );
 }
 
-export default function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const service = services.find((s) => s.id === params.id);
+export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
+  const service = await getService(params.id);
 
   if (!service) {
     notFound();
   }
+  
+  const reviews = MOCK_REVIEWS; // Using mock reviews for now
+  const reviewsCount = reviews.length;
+  const rating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviewsCount || 0;
 
-  const image = PlaceHolderImages.find((img) => img.imageUrl.includes(service.imageUrl));
-  const providerAvatar = PlaceHolderImages.find((img) => img.imageUrl.includes(service.provider.avatarUrl));
+
+  const image = PlaceHolderImages.find((img) => img.imageHint.includes(service.imageHint || ''));
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -59,8 +84,8 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
                 <Image
                   src={image.imageUrl}
                   alt={service.title}
-                  layout="fill"
-                  objectFit="cover"
+                  fill
+                  className="object-cover"
                   data-ai-hint={service.imageHint}
                 />
               )}
@@ -78,7 +103,7 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
               </div>
             </CardHeader>
             <CardContent>
-              <Rating rating={service.rating} count={service.reviewsCount} />
+              <Rating rating={rating} count={reviewsCount} />
               <Separator className="my-6" />
               <h3 className="text-xl font-semibold mb-2">About this service</h3>
               <p className="text-foreground/80 leading-relaxed">{service.description}</p>
@@ -90,10 +115,10 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
               <CardTitle>Reviews</CardTitle>
             </CardHeader>
             <CardContent>
-              <ReviewSummarizer reviews={service.reviews.map(r => r.comment)} />
+              <ReviewSummarizer reviews={reviews.map(r => r.comment)} />
               <Separator className="my-6" />
               <div className="space-y-6">
-                {service.reviews.map(review => (
+                {reviews.map(review => (
                     <div key={review.id} className="flex gap-4">
                         <Avatar className="h-10 w-10 border">
                             <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
@@ -131,12 +156,12 @@ export default function ServiceDetailPage({ params }: { params: { id: string } }
             <CardContent>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 border">
-                  {providerAvatar && <AvatarImage src={providerAvatar.imageUrl} alt={service.provider.name} data-ai-hint={providerAvatar.imageHint} />}
+                  {service.provider.avatarUrl && <AvatarImage src={service.provider.avatarUrl} alt={service.provider.name} />}
                   <AvatarFallback>{service.provider.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-lg font-bold">{service.provider.name}</p>
-                  <Rating rating={service.provider.rating} count={service.provider.reviewsCount} />
+                  <Rating rating={rating} count={reviewsCount} />
                 </div>
               </div>
               <Separator className="my-4" />
