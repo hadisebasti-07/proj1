@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Star, MessageSquare, Calendar, Shield } from 'lucide-react';
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import Link from 'next/link';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
@@ -144,7 +145,9 @@ export default async function ServiceDetailPage({ params }: { params: { id: stri
                     <CardTitle className="text-xl">Book This Service</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
-                     <Button size="lg" className="w-full">Book Now for ${service.price.toFixed(2)}</Button>
+                     <Button size="lg" className="w-full" asChild>
+                        <Link href={`/book/${service.id}`}>Book Now for ${service.price.toFixed(2)}</Link>
+                     </Button>
                      <Button size="lg" variant="outline" className="w-full"><MessageSquare className="mr-2 h-4 w-4" /> Message Provider</Button>
                 </CardContent>
             </Card>
