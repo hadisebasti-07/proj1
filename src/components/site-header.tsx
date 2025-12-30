@@ -5,11 +5,21 @@ import Link from 'next/link';
 import { Button } from './ui/button';
 import { Logo } from './icons';
 import { UserNav } from './user-nav';
-import { useUser } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { Skeleton } from './ui/skeleton';
 
 export function SiteHeader() {
-  const { user, isUserLoading } = useUser();
+  const { user, userProfile, isUserLoading, isUserAdmin } = useFirebase();
+
+  const getRole = () => {
+    if (isUserAdmin) return 'admin';
+    if (userProfile?.role === 'provider') return 'provider';
+    return 'customer';
+  }
+
+  const role = getRole();
+  const dashboardHref = role === 'customer' ? '/bookings' : '/dashboard';
+  const dashboardLabel = role === 'customer' ? 'My Bookings' : 'Dashboard';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -33,12 +43,14 @@ export function SiteHeader() {
           >
             Become a Provider
           </Link>
-          <Link
-            href="/dashboard"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
-          >
-            Dashboard
-          </Link>
+          {user && (
+            <Link
+              href={dashboardHref}
+              className="transition-colors hover:text-foreground/80 text-foreground/60"
+            >
+              {dashboardLabel}
+            </Link>
+          )}
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
           {isUserLoading ? (

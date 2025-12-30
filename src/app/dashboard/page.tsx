@@ -35,98 +35,6 @@ import type { Service, Booking, User as UserType, ProviderProfile } from '@/lib/
 
 
 //================================================================================
-// Customer Dashboard Components
-//================================================================================
-
-function CustomerBookings() {
-    const { user } = useFirebase();
-    const firestore = useFirestore();
-
-    const bookingsQuery = useMemoFirebase(() => {
-        if (!user) return null;
-        return query(collection(firestore, 'bookings'), where('customerId', '==', user.uid));
-    }, [firestore, user]);
-
-    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
-    
-    return (
-        <Card>
-            <CardHeader>
-              <CardTitle>My Bookings</CardTitle>
-              <CardDescription>
-                Manage your scheduled and completed services.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                    <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                ) : !bookings || bookings.length === 0 ? (
-                    <div className="text-center py-16">
-                        <h3 className="text-xl font-semibold mb-2">
-                            You haven't booked any services yet.
-                        </h3>
-                         <Button asChild>
-                            <Link href="/">Browse Services</Link>
-                        </Button>
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Service</TableHead>
-                            <TableHead>Provider</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Price</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {bookings.map((booking) => (
-                            <TableRow key={booking.id}>
-                            <TableCell className="font-medium">
-                                {booking.service?.title || 'N/A'}
-                            </TableCell>
-                            <TableCell>{booking.service?.provider?.name || 'N/A'}</TableCell>
-                            <TableCell>
-                                {booking.bookingDate ? format(booking.bookingDate.toDate(), 'PPP p') : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                variant={
-                                    booking.status === 'completed'
-                                    ? 'default'
-                                    : booking.status === 'confirmed'
-                                    ? 'secondary'
-                                    : 'destructive'
-                                }
-                                className="capitalize"
-                                >
-                                {booking.status}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                ${booking.service?.price?.toFixed(2) || '0.00'}
-                            </TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                )}
-            </CardContent>
-          </Card>
-    );
-}
-
-function CustomerDashboard() {
-  return (
-    <div className="space-y-8">
-      <CustomerBookings />
-    </div>
-  );
-}
-
-
-//================================================================================
 // Provider Dashboard Components
 //================================================================================
 
@@ -446,14 +354,6 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   const getRole = () => {
     if (isUserAdmin) return 'admin';
     if (userProfile?.role === 'provider') return 'provider';
@@ -461,6 +361,21 @@ export default function DashboardPage() {
   }
 
   const role = getRole();
+
+  // If user is a customer, redirect them from the dashboard
+  React.useEffect(() => {
+    if (!isUserLoading && role === 'customer') {
+      router.push('/');
+    }
+  }, [role, isUserLoading, router]);
+  
+  if (isUserLoading || !user || role === 'customer') {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   const renderDashboardContent = () => {
     switch(role) {
@@ -468,9 +383,9 @@ export default function DashboardPage() {
         return <AdminDashboard />;
       case 'provider':
         return <ProviderDashboard />;
-      case 'customer':
       default:
-        return <CustomerDashboard />;
+        // This case should not be reached due to the redirect
+        return null;
     }
   }
   
@@ -480,9 +395,8 @@ export default function DashboardPage() {
         return 'Admin Dashboard';
       case 'provider':
         return 'Provider Dashboard';
-      case 'customer':
       default:
-        return 'My Dashboard';
+        return 'Dashboard';
     }
   }
 

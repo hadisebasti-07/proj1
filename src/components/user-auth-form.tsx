@@ -13,15 +13,25 @@ import { useToast } from '@/hooks/use-toast';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  User,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc, serverTimestamp, getFirestore } from 'firebase/firestore';
+import { doc, serverTimestamp, getDoc, getFirestore } from 'firebase/firestore';
 
 interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
   formType: 'login' | 'signup';
 }
+
+const formSchema = z.object({
+  email: z.string().email({ message: 'Please enter a valid email.' }),
+  password: z
+    .string()
+    .min(6, { message: 'Password must be at least 6 characters.' }),
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export function UserAuthForm({
   className,
@@ -33,15 +43,6 @@ export function UserAuthForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-  const formSchema = z.object({
-    email: z.string().email({ message: 'Please enter a valid email.' }),
-    password: z
-      .string()
-      .min(6, { message: 'Password must be at least 6 characters.' }),
-  });
-
-  type FormData = z.infer<typeof formSchema>;
-
   const {
     register,
     handleSubmit,
@@ -50,13 +51,32 @@ export function UserAuthForm({
     resolver: zodResolver(formSchema),
   });
 
+  const handleRedirect = async (user: User) => {
+    const firestore = getFirestore(auth.app);
+    // It's possible the user document isn't created yet on first signup.
+    // We give it a moment, but this could be made more robust with retries or a waiting page.
+    try {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists() && userDoc.data()?.role !== 'customer') {
+        router.push('/dashboard');
+      } else {
+        router.push('/');
+      }
+    } catch {
+       router.push('/');
+    }
+  };
+
   async function onSubmit(data: FormData) {
     setIsLoading(true);
     try {
+      let userCredential;
       if (formType === 'login') {
-        await signInWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
         const user = userCredential.user;
         const firestore = getFirestore(auth.app);
         const userDocRef = doc(firestore, 'users', user.uid);
@@ -80,10 +100,10 @@ export function UserAuthForm({
             : 'Account created!',
         description: 'You will be redirected shortly.',
       });
-      // The redirect will happen automatically via the useUser hook listener
-      // No need for router.push here as it's handled globally
+      
+      await handleRedirect(userCredential.user);
+
     } catch (error: any) {
-      // This will now correctly catch auth errors
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
