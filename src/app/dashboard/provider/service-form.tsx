@@ -37,7 +37,6 @@ const formSchema = z.object({
   category: z.string().min(1, 'Please select a category.'),
   prompt: z
     .string()
-    .min(10, 'Prompt must be at least 10 characters to generate a description.')
     .optional(),
   description: z
     .string()
@@ -78,9 +77,9 @@ export function ServiceForm({ service }: ServiceFormProps) {
 
   const handleGenerateDescription = async () => {
     const prompt = form.getValues('prompt');
-    if (!prompt || prompt.length < 10) {
+    if (!prompt) {
       form.setError('prompt', {
-        message: 'Prompt is too short. Please provide more detail.',
+        message: 'Please enter a prompt to generate a description.',
       });
       return;
     }
@@ -334,5 +333,3 @@ export function ServiceForm({ service }: ServiceFormProps) {
     </Form>
   );
 }
-
-    

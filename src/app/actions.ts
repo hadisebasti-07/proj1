@@ -22,8 +22,8 @@ export async function generateDescription(
   prompt: string
 ): Promise<{ description: string | null; error: string | null }> {
   try {
-    if (prompt.length < 10) {
-      return { description: null, error: 'Prompt is too short. Please provide more detail.' };
+    if (!prompt) {
+      return { description: null, error: 'Please enter a prompt.' };
     }
     const result = await generateServiceListingDescription({ prompt });
     return { description: result.description, error: null };
