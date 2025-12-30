@@ -118,5 +118,43 @@ service cloud.firestore {
       allow get: if isOwner(userId) || isAdmin();
       allow list, write: if false;
     }
+    
+    // --- Financial System Rules ---
+    
+    // Wallet documents
+    match /wallets/{providerId} {
+        // A provider can read their own wallet. Admins can read any wallet.
+        allow get: if isOwner(providerId) || isAdmin();
+        
+        // NOBODY can write to the wallet directly from the client.
+        // Balances are updated by backend functions.
+        allow list, write: if false;
+    }
+    
+    // Immutable Ledger entries
+    match /wallets/{providerId}/ledger/{ledgerId} {
+        // Only admins can read the full transaction history.
+        allow get, list: if isAdmin();
+        
+        // NOBODY can write to the ledger from the client.
+        // Ledger entries are created by backend functions only.
+        allow write: if false;
+    }
+    
+    // Payout Requests
+    match /payout_requests/{payoutId} {
+        // A provider can read their own payout requests. Admins can read all.
+        allow get: if isOwner(existingData().providerId) || isAdmin();
+        allow list: if isAdmin(); // Admins can list all requests to manage them.
+        
+        // Providers can create new payout requests.
+        allow create: if isOwner(incomingData().providerId);
+        
+        // Admins can approve/reject requests. Providers cannot change status.
+        allow update: if isAdmin() && incomingData().keys().hasOnly(['status', 'adminNotes']);
+        
+        // Payouts are not deleted to maintain audit trail.
+        allow delete: if false;
+    }
   }
 }

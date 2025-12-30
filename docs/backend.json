@@ -129,6 +129,51 @@
         "enabled": { "type": "boolean" }
       },
       "required": ["start", "end", "enabled"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "Represents a provider's financial account. The balance is a derived value from the ledger and should not be edited directly by clients.",
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "number",
+          "description": "Current balance. This is a derived value managed by backend functions."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["balance", "updatedAt"]
+    },
+    "LedgerEntry": {
+      "title": "Ledger Entry",
+      "description": "An immutable record of a single financial transaction. These are created by backend functions only.",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number", "description": "Transaction amount. Positive for credits, negative for debits." },
+        "type": { "type": "string", "enum": ["booking_fee", "payout", "correction", "refund"] },
+        "description": { "type": "string" },
+        "bookingId": { "type": "string", "description": "Associated booking, if applicable." },
+        "payoutId": { "type": "string", "description": "Associated payout request, if applicable." },
+        "triggeredBy": { "type": "string", "description": "UID of admin or 'system' for automated actions." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "type", "description", "createdAt"]
+    },
+    "PayoutRequest": {
+      "title": "Payout Request",
+      "description": "A provider's request to withdraw funds from their wallet.",
+      "type": "object",
+      "properties": {
+        "providerId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "adminNotes": { "type": "string" }
+      },
+      "required": ["providerId", "amount", "status", "requestedAt"]
     }
   },
   "auth": {
@@ -182,6 +227,30 @@
           "entityName": "AdminRole",
           "schema": { "$ref": "#/backend/entities/AdminRole" },
           "description": "Private collection to designate admin users. Managed by backend."
+        }
+      },
+      {
+        "path": "/wallets/{providerId}",
+        "definition": {
+          "entityName": "Wallet",
+          "schema": { "$ref": "#/backend/entities/Wallet" },
+          "description": "Provider wallet information."
+        }
+      },
+      {
+        "path": "/wallets/{providerId}/ledger/{ledgerEntryId}",
+        "definition": {
+          "entityName": "LedgerEntry",
+          "schema": { "$ref": "#/backend/entities/LedgerEntry" },
+          "description": "Immutable transaction log for a provider's wallet."
+        }
+      },
+      {
+        "path": "/payout_requests/{payoutRequestId}",
+        "definition": {
+          "entityName": "PayoutRequest",
+          "schema": { "$ref": "#/backend/entities/PayoutRequest" },
+          "description": "Provider payout requests for admin review."
         }
       }
     ]
