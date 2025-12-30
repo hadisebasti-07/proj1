@@ -112,11 +112,10 @@ export function CreateListingForm() {
 
     try {
         const servicesCollection = collection(firestore, 'services');
+        const { image, ...serviceData } = data;
+
         await addDoc(servicesCollection, {
-            ...data,
-            // image is not handled yet, so we omit it
-            image: undefined,
-            // Add provider info and timestamps
+            ...serviceData,
             provider: {
                 id: user.uid,
                 name: userProfile.displayName || user.displayName || 'Unnamed Provider',
