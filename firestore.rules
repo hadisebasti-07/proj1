@@ -94,8 +94,8 @@ service cloud.firestore {
       allow get: if isAdmin() || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.providerId == request.auth.uid));
       
       // Admins can list all bookings.
-      // Non-admins can only list bookings if they are specifically querying by their own ID.
-      allow list: if isAdmin();
+      // Customers and providers can only list bookings they are involved in.
+      allow list: if isAdmin() || (isSignedIn() && (request.query.where.customerId == request.auth.uid || request.query.where.providerId == request.auth.uid));
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);
