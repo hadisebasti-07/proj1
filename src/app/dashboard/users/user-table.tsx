@@ -35,6 +35,8 @@ import { format } from 'date-fns';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 interface UserTableProps {
   onEdit: (user: User) => void;
@@ -59,8 +61,9 @@ export function UserTable({ onEdit }: UserTableProps) {
       deleteDocumentNonBlocking(userDoc);
       toast({
         title: 'User Deleted',
-        description: `${userToDelete.name} has been removed from the system.`,
+        description: `${userToDelete.displayName} has been removed from the system.`,
       });
+      setUserToDelete(null);
     }
   };
 
@@ -68,7 +71,7 @@ export function UserTable({ onEdit }: UserTableProps) {
     if (!users) return [];
     return users.filter(
       (user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [users, searchTerm]);
@@ -87,7 +90,6 @@ export function UserTable({ onEdit }: UserTableProps) {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Created At</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -96,18 +98,25 @@ export function UserTable({ onEdit }: UserTableProps) {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={5} className="text-center">
                   Loading users...
                 </TableCell>
               </TableRow>
             ) : filteredUsers.length > 0 ? (
               filteredUsers.map((user) => (
                 <TableRow key={user.uid}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="font-medium">
+                     <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10 border">
+                            {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName}/>}
+                            <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        {user.displayName}
+                    </div>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phone}</TableCell>
                   <TableCell>
-                    <Badge variant={user.role === 'admin' ? 'destructive' : 'secondary'}>
+                    <Badge variant={user.role === 'admin' ? 'destructive' : (user.role === 'provider' ? 'default' : 'secondary')}>
                       {user.role}
                     </Badge>
                   </TableCell>
@@ -143,7 +152,7 @@ export function UserTable({ onEdit }: UserTableProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={5} className="text-center">
                   No users found.
                 </TableCell>
               </TableRow>
@@ -158,7 +167,7 @@ export function UserTable({ onEdit }: UserTableProps) {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete {' '}
-              <strong>{userToDelete?.name}</strong> and remove their data from our
+              <strong>{userToDelete?.displayName}</strong> and remove their data from our
               servers.
             </AlertDialogDescription>
           </AlertDialogHeader>

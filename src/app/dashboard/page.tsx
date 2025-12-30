@@ -28,9 +28,7 @@ import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { PlusCircle, Loader2, Calendar, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
-import { UserTable } from './users/user-table';
-import { UserForm } from './users/user-form';
-import type { User as UserType, Service } from '@/lib/types';
+
 import {
   Dialog,
   DialogContent,
@@ -47,6 +45,7 @@ import {
 import { useFirebase, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { query, collection, where } from 'firebase/firestore';
+import type { Service } from '@/lib/types';
 
 function MyListings() {
     const { user } = useFirebase();
@@ -148,11 +147,6 @@ export default function DashboardPage() {
   const { user, isUserLoading, isUserAdmin } = useFirebase();
   const router = useRouter();
 
-  const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState<UserType | null>(
-    null
-  );
-
   const isLoading = isUserLoading;
   const isAdmin = !isLoading && isUserAdmin;
 
@@ -161,35 +155,6 @@ export default function DashboardPage() {
       router.push('/auth/login');
     }
   }, [user, isUserLoading, router]);
-
-  const handleEdit = (user: UserType) => {
-    // Use setTimeout to defer state updates, allowing Radix to manage focus correctly first.
-    setTimeout(() => {
-      setSelectedUser(user);
-      setIsFormOpen(true);
-    }, 0);
-  };
-
-  const handleAddNew = () => {
-    setSelectedUser(null);
-    setIsFormOpen(true);
-  };
-
-  const handleFormSuccess = () => {
-    // This is called from the form on successful submission.
-    // It signals that we should close the dialog.
-    setIsFormOpen(false);
-  };
-
-  // This is the single source of truth for managing the dialog's open state.
-  const handleOpenChange = (open: boolean) => {
-    setIsFormOpen(open);
-    // If the dialog is closing (for any reason), reset the selected user.
-    if (!open) {
-      setSelectedUser(null);
-    }
-  };
-
 
   if (isLoading) {
     return (
@@ -284,16 +249,19 @@ export default function DashboardPage() {
                 <div>
                   <CardTitle>User Management</CardTitle>
                   <CardDescription>
-                    View, add, edit, and remove users.
+                    View and manage all user accounts in the system.
                   </CardDescription>
                 </div>
-                <Button onClick={handleAddNew}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add New User
+                 <Button asChild>
+                  <Link href="/dashboard/users">
+                    Go to User Management
+                  </Link>
                 </Button>
               </CardHeader>
-              <CardContent>
-                <UserTable onEdit={handleEdit} />
+               <CardContent className="text-center py-16 space-y-4">
+                 <p className="text-muted-foreground">
+                  User management functionality to be implemented here.
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
@@ -343,25 +311,6 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      <Dialog open={isFormOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedUser ? 'Edit User' : 'Add New User'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedUser
-                ? "Update the user's details below."
-                : 'Enter the details for the new user.'}
-            </DialogDescription>
-          </DialogHeader>
-          {/* Conditionally render the form to ensure it unmounts cleanly */}
-          {isFormOpen && (
-            <UserForm user={selectedUser} onFormSubmit={handleFormSuccess} />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

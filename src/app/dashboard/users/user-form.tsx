@@ -33,22 +33,16 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import type { User } from '@/lib/types';
+import { updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  displayName: z.string().min(2, 'Name must be at least 2 characters.'),
   email: z.string().email('Please enter a valid email address.'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits.'),
-  role: z.enum(['customer', 'provider']),
+  role: z.enum(['customer', 'provider', 'admin']),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-const defaultValues = {
-  name: '',
-  email: '',
-  phone: '',
-  role: 'customer' as const,
-};
 
 interface UserFormProps {
   user: User | null;
@@ -63,7 +57,11 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: user || defaultValues,
+    defaultValues: {
+      displayName: user?.displayName || '',
+      email: user?.email || '',
+      role: user?.role || 'customer',
+    },
   });
 
   async function onSubmit(data: FormData) {
@@ -80,28 +78,33 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
     try {
       if (user) {
         const userDoc = doc(firestore, 'users', user.uid);
-        await updateDoc(userDoc, data);
+        // Using non-blocking update
+        updateDocumentNonBlocking(userDoc, data);
         toast({
           title: 'User Updated',
-          description: `Details for ${data.name} have been updated.`,
+          description: `Details for ${data.displayName} have been updated.`,
         });
       } else {
+        // NOTE: This path is for creating a user record in Firestore, not a Firebase Auth user.
+        // This is useful if you have a separate user creation process.
         const newUid = doc(collection(firestore, 'id-generator')).id;
         const userDoc = doc(firestore, 'users', newUid);
-        await setDoc(userDoc, {
+        
+        const newUserPayload = {
           ...data,
           uid: newUid,
           createdAt: serverTimestamp(),
-        });
+          photoURL: '', // Add default empty photoURL
+        };
+
+        // Using non-blocking set with merge:false
+        setDocumentNonBlocking(userDoc, newUserPayload, { merge: false });
         toast({
           title: 'User Added',
-          description: `${data.name} has been added to the system.`,
+          description: `${data.displayName} has been added to the system.`,
         });
       }
-      // Use setTimeout to defer closing the dialog, allowing focus to be managed correctly.
-      setTimeout(() => {
-        onFormSubmit();
-      }, 0);
+      onFormSubmit();
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
@@ -111,7 +114,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
           (error as Error).message || 'An unexpected error occurred.',
       });
     } finally {
-      // Don't set isSubmitting to false here, as the component will unmount.
+       setIsSubmitting(false);
     }
   }
 
@@ -121,7 +124,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
         <div className="space-y-4">
           <FormField
             control={form.control}
-            name="name"
+            name="displayName"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Name</FormLabel>
@@ -142,21 +145,8 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                   <Input
                     placeholder="john.doe@example.com"
                     {...field}
-                    disabled={!!user}
+                    disabled={!!user} // Don't allow editing email
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone</FormLabel>
-                <FormControl>
-                  <Input placeholder="(123) 456-7890" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -180,6 +170,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
                   <SelectContent>
                     <SelectItem value="customer">Customer</SelectItem>
                     <SelectItem value="provider">Provider</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -187,7 +178,7 @@ export function UserForm({ user, onFormSubmit }: UserFormProps) {
             )}
           />
         </div>
-        <div className="flex justify-end space-x-4">
+        <div className="flex justify-end space-x-4 pt-4">
             <DialogClose asChild>
                 <Button type="button" variant="outline">
                     Cancel

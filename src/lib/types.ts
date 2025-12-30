@@ -15,7 +15,7 @@ export type ProviderProfile = {
   location: string;
   photoUrl?: string;
   rating: number;
-  status: 'active' | 'pending';
+  status: 'active' | 'pending' | 'draft' | 'suspended' | 'verified';
   userId: string;
   createdAt: Timestamp;
 };
@@ -46,7 +46,6 @@ export type Service = {
   imageHint?: string;
   rating: number;
   reviewsCount: number;
-  reviews: Review[];
   isActive: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -60,12 +59,10 @@ export type Booking = {
 };
 
 export type User = {
-    id: string; // Firestore document ID
-    uid: string;
-    name: string;
+    uid: string; // Corresponds to Firebase Auth UID
+    displayName: string;
     email: string;
-    phone: string;
-    // role is not used for authorization, just for UI display
+    photoURL?: string;
     role: 'customer' | 'provider' | 'admin';
     createdAt: Timestamp;
 };

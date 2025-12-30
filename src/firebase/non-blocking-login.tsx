@@ -33,8 +33,8 @@ export function initiateEmailSignUp(
       const newUser = {
         uid: user.uid,
         email: user.email,
-        name: user.email?.split('@')[0] || 'New User', // Default name
-        phone: '', // Default empty phone
+        displayName: user.email?.split('@')[0] || 'New User', // Default name
+        photoURL: user.photoURL || '',
         role: 'customer', // Default role for new users
         createdAt: serverTimestamp(),
       };
