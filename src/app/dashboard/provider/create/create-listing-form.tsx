@@ -32,6 +32,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useFirebase, useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const timeSlots = [
   { id: 'morning', label: 'Morning (9:00 AM - 12:00 PM)' },
@@ -63,6 +65,8 @@ type FormData = z.infer<typeof formSchema>;
 
 export function CreateListingForm() {
   const { toast } = useToast();
+  const { user, userProfile } = useFirebase();
+  const firestore = useFirestore();
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
@@ -113,18 +117,52 @@ export function CreateListingForm() {
   };
 
   async function onSubmit(data: FormData) {
-    setIsSubmitting(true);
-    console.log(data);
-    // This is where you would handle form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    if (!user || !userProfile) {
       toast({
-        title: 'Listing Created (Demo)',
-        description: 'Your new service listing has been created.',
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in as a provider to create a listing.',
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+        const servicesCollection = collection(firestore, 'services');
+        await addDoc(servicesCollection, {
+            ...data,
+            // image is not handled yet, so we omit it
+            image: undefined,
+            // Add provider info and timestamps
+            provider: {
+                id: user.uid,
+                name: userProfile.displayName || user.displayName || 'Unnamed Provider',
+                avatarUrl: userProfile.photoUrl || user.photoURL || '',
+            },
+            isActive: true, // Listings are active by default
+            rating: 0,
+            reviewsCount: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+      toast({
+        title: 'Listing Created!',
+        description: 'Your new service listing is now live.',
       });
       form.reset();
       setImagePreview(null);
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error creating listing:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error Creating Listing',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
