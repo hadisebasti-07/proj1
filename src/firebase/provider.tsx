@@ -2,7 +2,7 @@
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot, collection, query, limit, getDocs } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 import type { User as UserProfile } from '@/lib/types';
@@ -115,7 +115,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
           setUserAuthState(prevState => ({
             ...prevState,
             userProfile: userProfileData,
-            // Keep loading until admin check is also complete
             isUserLoading: prevState.isUserAdmin === undefined || prevState.isUserLoading,
           }));
         } else {
@@ -128,35 +127,24 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     
-    // Securely check for admin privileges by attempting an admin-only action
+    // Securely check for admin privileges by checking for the existence of a role doc.
     const checkAdminStatus = async () => {
-        const usersQuery = query(collection(firestore, 'users'), limit(1));
+        const adminRoleDocRef = doc(firestore, 'roles_admin', userAuthState.user!.uid);
         try {
-            // If this query succeeds, the user has 'list' permission, therefore they are an admin.
-            await getDocs(usersQuery);
+            const adminDoc = await getDoc(adminRoleDocRef);
             setUserAuthState(prevState => ({
                 ...prevState,
-                isUserAdmin: true,
+                isUserAdmin: adminDoc.exists(),
                 isUserLoading: false,
             }));
         } catch (error: any) {
-            // A 'permission-denied' error is expected for non-admins.
-            if (error.code === 'permission-denied') {
-                setUserAuthState(prevState => ({
-                    ...prevState,
-                    isUserAdmin: false,
-                    isUserLoading: false,
-                }));
-            } else {
-                // For other errors, log them
-                console.error("FirebaseProvider: Error checking admin status:", error);
-                setUserAuthState(prevState => ({
-                    ...prevState,
-                    isUserAdmin: false,
-                    isUserLoading: false,
-                    userError: error,
-                }));
-            }
+            console.error("FirebaseProvider: Error checking admin status:", error);
+            setUserAuthState(prevState => ({
+                ...prevState,
+                isUserAdmin: false,
+                isUserLoading: false,
+                userError: error,
+            }));
         }
     };
 
@@ -248,5 +236,3 @@ export const useUser = (): UserHookResult => {
   const { user, isUserLoading, userError } = useFirebase(); 
   return { user, isUserLoading, userError };
 };
-
-    

@@ -32,7 +32,10 @@ service cloud.firestore {
     }
 
     match /roles_admin/{userId} {
-      allow read, write: if false;
+      // Allow a user to read their own admin role document.
+      // Disallow list, create, update, delete for all.
+      allow get: if isOwner(userId);
+      allow list, write: if false;
     }
   }
 }
