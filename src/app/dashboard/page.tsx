@@ -119,9 +119,11 @@ function MyListings() {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        <span>Edit</span>
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/dashboard/provider/edit/${service.id}`}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            <span>Edit</span>
+                                                        </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-destructive">
                                                         <Trash2 className="mr-2 h-4 w-4" />
@@ -363,3 +365,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

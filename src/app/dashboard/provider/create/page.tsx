@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { CreateListingForm } from './create-listing-form';
+import { ServiceForm } from '../service-form';
 
 export default function CreateListingPage() {
   return (
@@ -30,9 +30,11 @@ export default function CreateListingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CreateListingForm />
+          <ServiceForm />
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
