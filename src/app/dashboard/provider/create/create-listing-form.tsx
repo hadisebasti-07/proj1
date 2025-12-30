@@ -16,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Loader2, Wand2 } from 'lucide-react';
+import { CalendarIcon, Loader2, Wand2, Paperclip } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateDescription } from '@/app/actions';
 import {
@@ -27,6 +27,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { categories } from '@/lib/data';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const timeSlots = [
+  { id: 'morning', label: 'Morning (9:00 AM - 12:00 PM)' },
+  { id: 'afternoon', label: 'Afternoon (1:00 PM - 5:00 PM)' },
+  { id: 'evening', label: 'Evening (6:00 PM - 9:00 PM)' },
+];
 
 const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -39,6 +50,13 @@ const formSchema = z.object({
     .min(20, 'Description must be at least 20 characters.'),
   price: z.coerce.number().min(0, 'Price must be a positive number.'),
   priceUnit: z.enum(['hourly', 'fixed']),
+  image: z.any().optional(),
+  availableDate: z.date({
+    required_error: 'A date of availability is required.',
+  }),
+  timeSlots: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: 'You have to select at least one time slot.',
+  }),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -47,6 +65,7 @@ export function CreateListingForm() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -57,6 +76,7 @@ export function CreateListingForm() {
       description: '',
       price: 0,
       priceUnit: 'fixed',
+      timeSlots: ['morning'],
     },
   });
 
@@ -84,8 +104,17 @@ export function CreateListingForm() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImagePreview(URL.createObjectURL(file));
+      form.setValue('image', file);
+    }
+  };
+
   async function onSubmit(data: FormData) {
     setIsSubmitting(true);
+    console.log(data);
     // This is where you would handle form submission
     setTimeout(() => {
       setIsSubmitting(false);
@@ -94,6 +123,7 @@ export function CreateListingForm() {
         description: 'Your new service listing has been created.',
       });
       form.reset();
+      setImagePreview(null);
     }, 2000);
   }
 
@@ -194,6 +224,118 @@ export function CreateListingForm() {
             </FormItem>
           )}
         />
+        
+        <FormItem>
+            <FormLabel>Service Image</FormLabel>
+            <FormControl>
+                <div className="flex items-center gap-4">
+                    {imagePreview && (
+                        <img src={imagePreview} alt="Image preview" className="w-24 h-24 object-cover rounded-md border" />
+                    )}
+                    <Button type="button" asChild variant="outline">
+                        <label htmlFor="image-upload" className="cursor-pointer">
+                            <Paperclip className="mr-2 h-4 w-4"/>
+                            {imagePreview ? 'Change Image' : 'Upload Image'}
+                        </label>
+                    </Button>
+                    <Input id="image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                </div>
+            </FormControl>
+            <FormDescription>Upload a high-quality image that represents your service.</FormDescription>
+        </FormItem>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <FormField
+            control={form.control}
+            name="availableDate"
+            render={({ field }) => (
+                <FormItem className="flex flex-col">
+                <FormLabel>Available Date</FormLabel>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <FormControl>
+                        <Button
+                        variant={"outline"}
+                        className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                        )}
+                        >
+                        {field.value ? (
+                            format(field.value, "PPP")
+                        ) : (
+                            <span>Pick a date</span>
+                        )}
+                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                    </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) =>
+                        date < new Date() || date < new Date("1900-01-01")
+                        }
+                        initialFocus
+                    />
+                    </PopoverContent>
+                </Popover>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            
+            <FormField
+            control={form.control}
+            name="timeSlots"
+            render={() => (
+                <FormItem>
+                <div className="mb-4">
+                    <FormLabel className="text-base">Available Time Slots</FormLabel>
+                    <FormDescription>
+                    Select the times you are available on the chosen date.
+                    </FormDescription>
+                </div>
+                {timeSlots.map((item) => (
+                    <FormField
+                    key={item.id}
+                    control={form.control}
+                    name="timeSlots"
+                    render={({ field }) => {
+                        return (
+                        <FormItem
+                            key={item.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                            <FormControl>
+                            <Checkbox
+                                checked={field.value?.includes(item.id)}
+                                onCheckedChange={(checked) => {
+                                return checked
+                                    ? field.onChange([...field.value, item.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                        (value) => value !== item.id
+                                        )
+                                    );
+                                }}
+                            />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                            {item.label}
+                            </FormLabel>
+                        </FormItem>
+                        );
+                    }}
+                    />
+                ))}
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
 
         <div className="grid grid-cols-2 gap-8">
           <FormField
