@@ -27,10 +27,10 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { PlusCircle, Loader2, Calendar } from 'lucide-react';
+import { PlusCircle, Loader2, Calendar, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { UserTable } from './users/user-table';
 import { UserForm } from './users/user-form';
-import type { User as UserType } from '@/lib/types';
+import type { User as UserType, Service } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -38,8 +38,109 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useFirebase } from '@/firebase';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+  } from '@/components/ui/dropdown-menu';
+import { useFirebase, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { query, collection, where } from 'firebase/firestore';
+
+function MyListings() {
+    const { user } = useFirebase();
+    const firestore = useFirestore();
+
+    const servicesQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        return query(collection(firestore, 'services'), where('provider.id', '==', user.uid));
+    }, [firestore, user]);
+
+    const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+
+    return (
+         <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>My Service Listings</CardTitle>
+                <CardDescription>
+                  Manage your service listings and connect with customers.
+                </CardDescription>
+              </div>
+              <Button asChild>
+                <Link href="/dashboard/provider/create">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Create New Listing
+                </Link>
+              </Button>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                     <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : !services || services.length === 0 ? (
+                    <div className="text-center py-16">
+                        <h3 className="text-xl font-semibold mb-2">
+                            You have no active listings.
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                            Start offering your services on MarketConnect today.
+                        </p>
+                    </div>
+                ) : (
+                    <div className="border rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {services.map((service) => (
+                                    <TableRow key={service.id}>
+                                        <TableCell className="font-medium">{service.title}</TableCell>
+                                        <TableCell>${service.price.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={service.isActive ? 'default' : 'secondary'}>
+                                                {service.isActive ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{format(service.createdAt.toDate(), 'PPP')}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Open menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem>
+                                                        <Edit className="mr-2 h-4 w-4" />
+                                                        <span>Edit</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <span>Delete</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+          </Card>
+    )
+}
+
 
 export default function DashboardPage() {
   const { user, isUserLoading, isUserAdmin } = useFirebase();
@@ -171,30 +272,7 @@ export default function DashboardPage() {
           </Card>
         </TabsContent>
         <TabsContent value="listings">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>My Service Listings</CardTitle>
-                <CardDescription>
-                  Manage your service listings and connect with customers.
-                </CardDescription>
-              </div>
-              <Button asChild>
-                <Link href="/dashboard/provider/create">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Create New Listing
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="text-center py-16">
-              <h3 className="text-xl font-semibold mb-2">
-                You have no active listings.
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Start offering your services on MarketConnect today.
-              </p>
-            </CardContent>
-          </Card>
+          <MyListings />
         </TabsContent>
 
         {isAdmin ? (

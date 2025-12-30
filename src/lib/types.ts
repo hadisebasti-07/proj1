@@ -44,8 +44,8 @@ export type Service = {
   provider: ProviderStub;
   imageUrl?: string;
   imageHint?: string;
-  rating?: number;
-  reviewsCount?: number;
+  rating: number;
+  reviewsCount: number;
   reviews: Review[];
   isActive: boolean;
   createdAt: Timestamp;
