@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Loader2, Clock, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirebase, useFirestore, useDoc, useMemoFirebase, setDocumentNonBlocking } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -101,27 +101,21 @@ export function AvailabilityForm() {
 
 
   async function onSubmit(data: FormData) {
-    if (!user) {
+    if (!user || !availabilityRef) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
       return;
     }
     setIsSubmitting(true);
-    try {
-      await setDoc(availabilityRef!, data, { merge: true });
-      toast({
-        title: 'Availability Updated',
-        description: 'Your schedule has been saved successfully.',
-      });
-    } catch (error: any) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Saving Availability',
-        description: error.message || 'An unexpected error occurred.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    
+    // Use the non-blocking fire-and-forget method for optimistic UI
+    setDocumentNonBlocking(availabilityRef, data, { merge: true });
+    
+    toast({
+      title: 'Availability Updated',
+      description: 'Your schedule has been saved successfully.',
+    });
+    
+    setIsSubmitting(false);
   }
 
   if (isLoading) {
