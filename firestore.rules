@@ -91,10 +91,10 @@ service cloud.firestore {
       // A customer or provider can get a booking they are involved in.
       allow get: if isSignedIn() && (isOwner(existingData().customerId) || isOwner(existingData().providerId));
       
-      // IMPORTANT SECURITY FIX: Removed insecure `list` rule.
-      // Clients must query bookings with a 'where' clause (e.g., where('customerId', '==', auth.uid))
+      // Admins can list all bookings for their console.
+      // Non-admins must query bookings with a 'where' clause (e.g., where('customerId', '==', auth.uid))
       // which is implicitly allowed if the 'get' rule passes for each document in the result.
-      allow list: if false;
+      allow list: if isAdmin();
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);

@@ -53,9 +53,21 @@ export type Service = {
 
 export type Booking = {
   id: string;
-  service: Service;
-  date: string;
+  serviceId: string;
+  customerId: string;
+  providerId: string;
+  bookingDate: Timestamp;
   status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  paymentStatus: 'unpaid' | 'paid' | 'refunded';
+  createdAt: Timestamp;
+  // Denormalized for easier display
+  service?: {
+    title: string;
+    price: number;
+    provider: {
+      name: string;
+    }
+  }
 };
 
 export type User = {

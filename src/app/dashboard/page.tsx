@@ -24,18 +24,10 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { PlusCircle, Loader2, Calendar, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -45,7 +37,155 @@ import {
 import { useFirebase, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { query, collection, where } from 'firebase/firestore';
-import type { Service } from '@/lib/types';
+import type { Service, Booking } from '@/lib/types';
+
+
+function MyBookings() {
+    const { user } = useFirebase();
+    const firestore = useFirestore();
+
+    const bookingsQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        // This query will only work if firestore rules allow it.
+        // Assumes a rule like: allow list: if request.query.where.customerId == request.auth.uid;
+        return query(collection(firestore, 'bookings'), where('customerId', '==', user.uid));
+    }, [firestore, user]);
+
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
+    
+    return (
+        <Card>
+            <CardHeader>
+              <CardTitle>My Upcoming & Past Bookings</CardTitle>
+              <CardDescription>
+                Manage your scheduled and completed services.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : !bookings || bookings.length === 0 ? (
+                    <div className="text-center py-16">
+                        <h3 className="text-xl font-semibold mb-2">
+                            You haven't booked any services yet.
+                        </h3>
+                         <Button asChild>
+                            <Link href="/">Browse Services</Link>
+                        </Button>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Provider</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {bookings.map((booking) => (
+                            <TableRow key={booking.id}>
+                            <TableCell className="font-medium">
+                                {booking.service?.title || 'N/A'}
+                            </TableCell>
+                            <TableCell>{booking.service?.provider?.name || 'N/A'}</TableCell>
+                            <TableCell>
+                                {booking.bookingDate ? format(booking.bookingDate.toDate(), 'PPP p') : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                variant={
+                                    booking.status === 'completed'
+                                    ? 'default'
+                                    : booking.status === 'confirmed'
+                                    ? 'secondary'
+                                    : 'destructive'
+                                }
+                                className="capitalize"
+                                >
+                                {booking.status}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                                ${booking.service?.price?.toFixed(2) || '0.00'}
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+          </Card>
+    );
+}
+
+function AdminBookings() {
+    const firestore = useFirestore();
+    const bookingsQuery = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
+    
+    return (
+        <Card>
+            <CardHeader>
+              <CardTitle>All Bookings</CardTitle>
+              <CardDescription>
+                View all bookings across the platform.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : !bookings || bookings.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                        <p>No bookings have been made on the platform yet.</p>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Service</TableHead>
+                             <TableHead>Customer ID</TableHead>
+                            <TableHead>Provider ID</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {bookings.map((booking) => (
+                            <TableRow key={booking.id}>
+                            <TableCell className="font-medium">
+                                {booking.serviceId}
+                            </TableCell>
+                             <TableCell>{booking.customerId}</TableCell>
+                            <TableCell>{booking.providerId}</TableCell>
+                            <TableCell>
+                                {booking.bookingDate ? format(booking.bookingDate.toDate(), 'PPP p') : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                variant={
+                                    booking.status === 'completed'
+                                    ? 'default'
+                                    : booking.status === 'confirmed'
+                                    ? 'secondary'
+                                    : 'destructive'
+                                }
+                                className="capitalize"
+                                >
+                                {booking.status}
+                                </Badge>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                )}
+            </CardContent>
+          </Card>
+    );
+}
 
 function MyListings() {
     const { user } = useFirebase();
@@ -142,6 +282,86 @@ function MyListings() {
     )
 }
 
+function AdminListings() {
+    const firestore = useFirestore();
+    const servicesQuery = useMemoFirebase(() => collection(firestore, 'services'), [firestore]);
+    const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+
+    return (
+         <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>All Service Listings</CardTitle>
+                <CardDescription>
+                  Manage all service listings on the platform.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                     <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : !services || services.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                        <p>No services have been listed on the platform yet.</p>
+                    </div>
+                ) : (
+                    <div className="border rounded-lg">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Title</TableHead>
+                                    <TableHead>Provider</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Created</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {services.map((service) => (
+                                    <TableRow key={service.id}>
+                                        <TableCell className="font-medium">{service.title}</TableCell>
+                                        <TableCell>{service.provider.name}</TableCell>
+                                        <TableCell>${service.price.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={service.isActive ? 'default' : 'secondary'}>
+                                                {service.isActive ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{format(service.createdAt.toDate(), 'PPP')}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" className="h-8 w-8 p-0">
+                                                        <span className="sr-only">Open menu</span>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/dashboard/provider/edit/${service.id}`}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            <span>Edit</span>
+                                                        </Link>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive">
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <span>Delete</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                )}
+            </CardContent>
+          </Card>
+    )
+}
+
 
 export default function DashboardPage() {
   const { user, isUserLoading, isUserAdmin } = useFirebase();
@@ -179,67 +399,17 @@ export default function DashboardPage() {
             isAdmin ? 'grid-cols-5' : 'grid-cols-3'
           } mb-6`}
         >
-          <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-          <TabsTrigger value="listings">My Listings</TabsTrigger>
+          <TabsTrigger value="bookings">{isAdmin ? "All Bookings" : "My Bookings"}</TabsTrigger>
+          <TabsTrigger value="listings">{isAdmin ? "All Listings" : "My Listings"}</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
           {isAdmin && <TabsTrigger value="providers">Providers</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
         <TabsContent value="bookings">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upcoming & Past Bookings</CardTitle>
-              <CardDescription>
-                Manage your scheduled and completed services.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Price</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell className="font-medium">
-                        {booking.service.title}
-                      </TableCell>
-                      <TableCell>{booking.service.provider.name}</TableCell>
-                      <TableCell>
-                        {format(new Date(booking.date), 'PPP p')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            booking.status === 'completed'
-                              ? 'default'
-                              : booking.status === 'confirmed'
-                              ? 'secondary'
-                              : 'destructive'
-                          }
-                          className="capitalize"
-                        >
-                          {booking.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ${booking.service.price.toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          {isAdmin ? <AdminBookings /> : <MyBookings />}
         </TabsContent>
         <TabsContent value="listings">
-          <MyListings />
+          {isAdmin ? <AdminListings /> : <MyListings />}
         </TabsContent>
 
         {isAdmin ? (
