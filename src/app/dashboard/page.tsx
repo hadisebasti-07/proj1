@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { bookings } from '@/lib/data';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, Calendar } from 'lucide-react';
 import { UserTable } from './users/user-table';
 import { UserForm } from './users/user-form';
 import type { User as UserType } from '@/lib/types';
@@ -247,13 +247,18 @@ export default function DashboardPage() {
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
               <CardDescription>
-                Update your profile and notification preferences.
+                Update your profile and set your availability.
               </CardDescription>
             </CardHeader>
-            <CardContent className="text-center py-16 space-y-4">
-              <p className="text-muted-foreground">
-                Account settings UI to be implemented here.
+            <CardContent className="py-16 text-center">
+               <p className="text-muted-foreground mb-4">
+                Set your weekly hours to let customers know when you're available.
               </p>
+               <Button asChild>
+                <Link href="/dashboard/provider/availability">
+                  <Calendar className="mr-2 h-4 w-4" /> Manage Availability
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

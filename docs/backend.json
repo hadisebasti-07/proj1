@@ -57,6 +57,65 @@
         }
       },
       "required": ["isAdmin"]
+    },
+    "ProviderProfile": {
+      "title": "Provider Profile",
+      "type": "object",
+      "description": "Public-facing profile for a service provider, separate from their user auth data.",
+      "properties": {
+        "userId": { "type": "string", "description": "Reference to the User UID." },
+        "displayName": { "type": "string" },
+        "description": { "type": "string" },
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "location": { "type": "string" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "rating": { "type": "number" },
+        "status": { "type": "string", "enum": ["draft", "active", "suspended", "verified"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "displayName", "status", "createdAt"]
+    },
+    "ProviderAvailability": {
+      "title": "Provider Availability",
+      "type": "object",
+      "description": "Defines a provider's weekly schedule and any exceptions.",
+      "properties": {
+        "weeklySchedule": {
+          "type": "object",
+          "description": "Default recurring weekly availability.",
+          "properties": {
+            "monday": { "$ref": "#/backend/entities/TimeSlot" },
+            "tuesday": { "$ref": "#/backend/entities/TimeSlot" },
+            "wednesday": { "$ref": "#/backend/entities/TimeSlot" },
+            "thursday": { "$ref": "#/backend/entities/TimeSlot" },
+            "friday": { "$ref": "#/backend/entities/TimeSlot" },
+            "saturday": { "$ref": "#/backend/entities/TimeSlot" },
+            "sunday": { "$ref": "#/backend/entities/TimeSlot" }
+          }
+        },
+        "dateOverrides": {
+          "type": "array",
+          "description": "Specific date-based overrides for time off or special hours.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string", "format": "date" },
+              "slots": { "type": "array", "items": { "$ref": "#/backend/entities/TimeSlot" } }
+            }
+          }
+        }
+      }
+    },
+    "TimeSlot": {
+      "title": "Time Slot",
+      "type": "object",
+      "description": "A simple time slot with start and end times.",
+      "properties": {
+        "start": { "type": "string", "description": "Start time, e.g., '09:00'" },
+        "end": { "type": "string", "description": "End time, e.g., '17:00'" },
+        "enabled": { "type": "boolean" }
+      },
+      "required": ["start", "end", "enabled"]
     }
   },
   "auth": {
@@ -81,19 +140,19 @@
         }
       },
       {
-        "path": "/users/{userId}/private_bookings/{bookingId}",
+        "path": "/providers/{providerId}",
         "definition": {
-          "entityName": "Booking",
-          "schema": { "$ref": "#/backend/entities/Booking" },
-          "description": "A customer's private record of their bookings."
+          "entityName": "ProviderProfile",
+          "schema": { "$ref": "#/backend/entities/ProviderProfile" },
+          "description": "Public profiles for service providers."
         }
       },
       {
-        "path": "/providers/{providerId}/public_bookings/{bookingId}",
+        "path": "/providers/{providerId}/availability/schedule",
         "definition": {
-          "entityName": "Booking",
-          "schema": { "$ref": "#/backend/entities/Booking" },
-          "description": "A provider's view of bookings for their services (denormalized)."
+            "entityName": "ProviderAvailability",
+            "schema": { "$ref": "#/backend/entities/ProviderAvailability" },
+            "description": "Singleton document storing a provider's availability."
         }
       },
       {
@@ -101,7 +160,7 @@
         "definition": {
           "entityName": "AdminRole",
           "schema": { "$ref": "#/backend/entities/AdminRole" },
-          "description": "Private collection to designate admin users."
+          "description": "Private collection to designate admin users. Managed by backend."
         }
       }
     ]

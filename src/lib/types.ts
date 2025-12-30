@@ -67,4 +67,30 @@ export type User = {
     // role is not used for authorization, just for UI display
     role: 'customer' | 'provider' | 'admin';
     createdAt: Timestamp;
+};
+
+export type TimeSlot = {
+  start: string;
+  end: string;
+};
+
+export type DaySchedule = {
+  enabled: boolean;
+  slots: TimeSlot[];
+};
+
+export type ProviderAvailability = {
+  weeklySchedule: {
+    sunday: DaySchedule;
+    monday: DaySchedule;
+    tuesday: DaySchedule;
+    wednesday: DaySchedule;
+    thursday: DaySchedule;
+    friday: DaySchedule;
+    saturday: DaySchedule;
+  };
+  dateOverrides?: {
+    date: string; // YYYY-MM-DD
+    slots: TimeSlot[];
+  }[];
 }

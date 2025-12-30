@@ -40,8 +40,8 @@ service cloud.firestore {
     
     // User Profiles
     match /users/{userId} {
-      allow get: if isSignedIn(); // Any signed-in user can view a profile.
-      allow list: if isAdmin(); // Only admins can list all users.
+      allow get: if isSignedIn();
+      allow list: if isAdmin();
 
       // A user can create their own profile. An admin can create any.
       allow create: if isOwner(userId) || isAdmin();
@@ -60,30 +60,27 @@ service cloud.firestore {
         // Only the provider can create/update/delete their own services.
         allow create, update, delete: if isOwner(userId);
     }
-    
-    // Customer's private record of their bookings.
-    // ARCHITECTURE PRINCIPLE: Auditable and traceable writes.
-    // The customer owns this record.
-    match /users/{userId}/private_bookings/{bookingId} {
-      allow get, list, create, update: if isOwner(userId);
-      allow delete: if false; // Bookings should be cancelled, not deleted by clients.
-    }
 
-    // Provider's view of their bookings (denormalized read-only copy)
-    // ARCHITECTURE PRINCIPLE: Denormalized for performance/security.
-    match /providers/{providerId}/public_bookings/{bookingId} {
-        allow get, list: if isOwner(providerId);
-        
-        // ARCHITECTURE PRINCIPLE: All critical logic runs in Cloud Functions.
-        // This collection is read-only for clients. Cloud Functions will sync data here.
-        allow write: if false; 
+    // Provider public profiles
+    match /providers/{providerId} {
+      allow get, list: if true; // Publicly readable
+      allow create, update, delete: if isAdmin() || isOwner(providerId); // Admin or provider can manage.
+    }
+    
+    // Provider Availability
+    match /providers/{providerId}/availability/{docId} {
+       allow get: if isOwner(providerId) || isAdmin();
+       allow list: if isOwner(providerId) || isAdmin();
+       allow create, update: if isOwner(providerId);
+       allow delete: if false; // Should be updated, not deleted.
     }
     
     // Admin role management collection
     match /roles_admin/{userId} {
       // This collection is managed by backend/admins only.
-      // No client-side reads or writes are allowed.
-      allow read, write: if false;
+      // No client-side reads or writes are allowed for listing/writing.
+      allow get: if isOwner(userId); // Allow a user to check their own admin status.
+      allow list, write: if false;
     }
   }
 }
