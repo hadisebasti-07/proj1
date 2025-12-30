@@ -1,8 +1,31 @@
+'use client';
+
+import * as React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/icons';
 import { UserAuthForm } from '@/components/user-auth-form';
+import { useUser } from '@/firebase';
+import { Loader2 } from 'lucide-react';
 
 export default function SignupPage() {
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="container flex h-screen w-screen flex-col items-center justify-center">
       <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
