@@ -90,14 +90,13 @@ service cloud.firestore {
 
     // Bookings
     match /bookings/{bookingId} {
-      // A customer or provider can get a booking they are involved in. Admins can get any.
+      // A customer or provider can read a booking they are involved in. Admins can get any.
       allow get: if isAdmin() || (isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.providerId == request.auth.uid));
       
-      // Admins can list all bookings.
-      // Customers/Providers can query for their own bookings.
+      // Admins can list all bookings. Customers/Providers can only list their own.
       allow list: if isAdmin() || 
-                     (isSignedIn() && request.query.where.customerId == request.auth.uid) ||
-                     (isSignedIn() && request.query.where.providerId == request.auth.uid);
+                     (isSignedIn() && request.query.get("where.customerId") == request.auth.uid) ||
+                     (isSignedIn() && request.query.get("where.providerId") == request.auth.uid);
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);
@@ -161,3 +160,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

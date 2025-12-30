@@ -357,19 +357,22 @@ export default function DashboardPage() {
   const getRole = () => {
     if (isUserAdmin) return 'admin';
     if (userProfile?.role === 'provider') return 'provider';
-    return 'customer';
+    // If the profile is loaded and the role is not provider, it must be a customer.
+    if (userProfile) return 'customer';
+    // If we're still loading, we don't know the role yet.
+    return 'loading';
   }
 
   const role = getRole();
 
   // If user is a customer, redirect them from the dashboard
   React.useEffect(() => {
-    if (!isUserLoading && role === 'customer') {
+    if (role === 'customer') {
       router.push('/');
     }
-  }, [role, isUserLoading, router]);
+  }, [role, router]);
   
-  if (isUserLoading || !user || role === 'customer') {
+  if (isUserLoading || role === 'loading' || role === 'customer') {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -384,7 +387,7 @@ export default function DashboardPage() {
       case 'provider':
         return <ProviderDashboard />;
       default:
-        // This case should not be reached due to the redirect
+        // This case should not be reached due to the loading/redirect logic
         return null;
     }
   }
@@ -409,3 +412,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
