@@ -69,10 +69,11 @@ export function UserTable({ onEdit }: UserTableProps) {
 
   const filteredUsers = React.useMemo(() => {
     if (!users) return [];
+    const lowercasedSearch = searchTerm.toLowerCase();
     return users.filter(
       (user) =>
-        user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.displayName?.toLowerCase().includes(lowercasedSearch)) ||
+        (user.email?.toLowerCase().includes(lowercasedSearch))
     );
   }, [users, searchTerm]);
 
@@ -109,9 +110,9 @@ export function UserTable({ onEdit }: UserTableProps) {
                      <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border">
                             {user.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName}/>}
-                            <AvatarFallback>{user.displayName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{user.displayName?.charAt(0) || '?'}</AvatarFallback>
                         </Avatar>
-                        {user.displayName}
+                        {user.displayName || 'Unnamed User'}
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>

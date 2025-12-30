@@ -68,10 +68,10 @@ export function ProviderTable({ onEdit }: ProviderTableProps) {
 
   const filteredProviders = React.useMemo(() => {
     if (!providers) return [];
-    return providers.filter(
-      (provider) =>
-        provider.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        provider.categories.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase()))
+    const lowercasedSearch = searchTerm.toLowerCase();
+    return providers.filter((provider) =>
+      (provider.displayName?.toLowerCase().includes(lowercasedSearch)) ||
+      (provider.categories?.some(cat => cat.toLowerCase().includes(lowercasedSearch)))
     );
   }, [providers, searchTerm]);
 
@@ -110,14 +110,14 @@ export function ProviderTable({ onEdit }: ProviderTableProps) {
                     <div className="flex items-center gap-3">
                         <Avatar className="h-10 w-10 border">
                             {provider.photoUrl && <AvatarImage src={provider.photoUrl} alt={provider.displayName}/>}
-                            <AvatarFallback>{provider.displayName.charAt(0)}</AvatarFallback>
+                            <AvatarFallback>{provider.displayName?.charAt(0) || '?'}</AvatarFallback>
                         </Avatar>
-                        {provider.displayName}
+                        {provider.displayName || 'Unnamed Provider'}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                        {provider.categories.map(cat => <Badge key={cat} variant="secondary">{cat}</Badge>)}
+                        {provider.categories?.map(cat => <Badge key={cat} variant="secondary">{cat}</Badge>)}
                     </div>
                   </TableCell>
                   <TableCell>{provider.location}</TableCell>
