@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import * as React from 'react';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
@@ -35,7 +36,8 @@ async function getService(id: string): Promise<Service | null> {
 
 
 export default async function EditListingPage({ params }: { params: { id: string }}) {
-  const service = await getService(params.id);
+  const { id } = React.use(params);
+  const service = await getService(id);
 
   if (!service) {
       notFound();
