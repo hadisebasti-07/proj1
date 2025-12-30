@@ -12,7 +12,12 @@ import { setDocumentNonBlocking } from './non-blocking-updates';
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance).catch((error) => {
+    // Although we don't await, we can still catch potential immediate errors
+    // and re-throw them for the UI to handle.
+    console.error('Error during anonymous sign in:', error);
+    throw error;
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
@@ -51,8 +56,17 @@ export function initiateEmailSignUp(
 }
 
 /** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
+export function initiateEmailSignIn(
+  authInstance: Auth,
+  email: string,
+  password: string
+): void {
   // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
+  signInWithEmailAndPassword(authInstance, email, password).catch((error) => {
+    // The UserAuthForm will handle displaying this error to the user via toast.
+    console.error('Error during sign in:', error);
+    // Re-throwing the error allows the calling component's catch block to execute.
+    throw error;
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
