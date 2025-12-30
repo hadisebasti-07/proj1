@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { Star, MessageSquare, Calendar, Shield } from 'lucide-react';
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
+import * as React from 'react';
 
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import {
@@ -62,7 +63,8 @@ function Rating({ rating, count }: { rating: number; count?: number }) {
 }
 
 export default async function ServiceDetailPage({ params }: { params: { id: string } }) {
-  const service = await getService(params.id);
+  const { id } = React.use(params);
+  const service = await getService(id);
 
   if (!service) {
     notFound();
