@@ -105,55 +105,62 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         }
       return;
     }
-
+  
     const userDocRef = doc(firestore, 'users', userAuthState.user.uid);
-
-    const unsubscribeProfile = onSnapshot(userDocRef, 
-      (doc) => {
-        if (doc.exists()) {
-          const userProfileData = doc.data() as UserProfile;
-          setUserAuthState(prevState => ({
+    const adminRoleDocRef = doc(firestore, 'roles_admin', userAuthState.user.uid);
+  
+    // Fetch both documents and update state once
+    const fetchData = async () => {
+      try {
+        const [userDoc, adminDoc] = await Promise.all([
+          getDoc(userDocRef),
+          getDoc(adminRoleDocRef)
+        ]);
+  
+        const userProfileData = userDoc.exists() ? userDoc.data() as UserProfile : null;
+        const isAdmin = adminDoc.exists();
+        
+        setUserAuthState(prevState => ({
             ...prevState,
             userProfile: userProfileData,
-            isUserLoading: prevState.isUserAdmin === undefined || prevState.isUserLoading,
-          }));
-        } else {
-            setUserAuthState(prevState => ({ ...prevState, userProfile: null, isUserLoading: false }));
-        }
-      },
-      (error) => {
-        console.error("FirebaseProvider: Error fetching user profile:", error);
-        setUserAuthState(prevState => ({ ...prevState, userProfile: null, isUserLoading: false, userError: error }));
+            isUserAdmin: isAdmin,
+            isUserLoading: false, // Loading is complete after both checks
+            userError: null
+        }));
+  
+      } catch (error: any) {
+        console.error("FirebaseProvider: Error fetching user data or admin status:", error);
+        setUserAuthState(prevState => ({
+          ...prevState,
+          userProfile: null,
+          isUserAdmin: false,
+          isUserLoading: false,
+          userError: error,
+        }));
       }
-    );
-    
-    // Securely check for admin privileges by checking for the existence of a role doc.
-    const checkAdminStatus = async () => {
-        const adminRoleDocRef = doc(firestore, 'roles_admin', userAuthState.user!.uid);
-        try {
-            const adminDoc = await getDoc(adminRoleDocRef);
-            setUserAuthState(prevState => ({
-                ...prevState,
-                isUserAdmin: adminDoc.exists(),
-                isUserLoading: false,
-            }));
-        } catch (error: any) {
-            console.error("FirebaseProvider: Error checking admin status:", error);
-            setUserAuthState(prevState => ({
-                ...prevState,
-                isUserAdmin: false,
-                isUserLoading: false,
-                userError: error,
-            }));
-        }
     };
+  
+    fetchData();
+  
+    // Optional: If you need realtime updates for the profile, you can still use onSnapshot
+    // but be careful about how it interacts with the initial loading state.
+    const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          setUserAuthState(prevState => ({ ...prevState, userProfile: doc.data() as UserProfile }));
+        } else {
+          setUserAuthState(prevState => ({ ...prevState, userProfile: null }));
+        }
+    });
 
-    checkAdminStatus();
-
-
+    const unsubscribeAdmin = onSnapshot(adminRoleDocRef, (doc) => {
+        setUserAuthState(prevState => ({...prevState, isUserAdmin: doc.exists() }));
+    });
+  
     return () => {
-        unsubscribeProfile();
-    }
+      unsubscribeProfile();
+      unsubscribeAdmin();
+    };
+  
   }, [userAuthState.user, firestore]);
 
   // Memoize the context value
