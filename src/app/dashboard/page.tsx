@@ -225,21 +225,81 @@ function ProviderListings() {
     )
 }
 
-function ProviderDashboard() {
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 space-y-8">
-        <ProviderListings />
-        {/* Placeholder for provider bookings */}
+function ProviderBookings() {
+    const { user } = useFirebase();
+    const firestore = useFirestore();
+
+    const bookingsQuery = useMemoFirebase(() => {
+        if (!user) return null;
+        return query(collection(firestore, 'bookings'), where('providerId', '==', user.uid));
+    }, [firestore, user]);
+
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
+
+    return (
         <Card>
             <CardHeader>
                 <CardTitle>My Bookings</CardTitle>
                 <CardDescription>View upcoming and past bookings from customers.</CardDescription>
             </CardHeader>
-            <CardContent className="text-center py-16 text-muted-foreground">
-                <p>Bookings from customers will appear here.</p>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : !bookings || bookings.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground">
+                        <p>Bookings from customers will appear here.</p>
+                    </div>
+                ) : (
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Service</TableHead>
+                            <TableHead>Customer</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Status</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {bookings.map((booking) => (
+                            <TableRow key={booking.id}>
+                            <TableCell className="font-medium">
+                                {booking.service?.title || 'N/A'}
+                            </TableCell>
+                             <TableCell>{'Unknown Customer'}</TableCell>
+                            <TableCell>
+                                {booking.bookingDate ? format(booking.bookingDate.toDate(), 'PPP p') : 'N/A'}
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                variant={
+                                    booking.status === 'completed'
+                                    ? 'default'
+                                    : booking.status === 'confirmed'
+                                    ? 'secondary'
+                                    : 'destructive'
+                                }
+                                className="capitalize"
+                                >
+                                {booking.status}
+                                </Badge>
+                            </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                )}
             </CardContent>
         </Card>
+    );
+}
+
+
+function ProviderDashboard() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-8">
+        <ProviderListings />
+        <ProviderBookings />
       </div>
       <div className="space-y-8">
         <Card>
@@ -386,17 +446,12 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isUserLoading) {
+  if (isUserLoading || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!user) {
-    // This can happen briefly while redirecting.
-    return null;
   }
 
   const getRole = () => {
@@ -435,13 +490,6 @@ export default function DashboardPage() {
     <div className="container mx-auto py-10 px-4">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">{getDashboardTitle()}</h1>
-        {role === 'provider' && (
-          <Button asChild>
-            <Link href="/dashboard/provider/create">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create Listing
-            </Link>
-          </Button>
-        )}
       </div>
       {renderDashboardContent()}
     </div>
