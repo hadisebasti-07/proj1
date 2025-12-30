@@ -108,12 +108,13 @@ export default function DashboardPage() {
       <Tabs defaultValue="bookings" className="w-full">
         <TabsList
           className={`grid w-full ${
-            isAdmin ? 'grid-cols-4' : 'grid-cols-3'
+            isAdmin ? 'grid-cols-5' : 'grid-cols-3'
           } mb-6`}
         >
           <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-          <TabsTrigger value="provider">Provider Hub</TabsTrigger>
+          <TabsTrigger value="listings">My Listings</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="providers">Providers</TabsTrigger>}
           <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
         <TabsContent value="bookings">
@@ -169,11 +170,11 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="provider">
+        <TabsContent value="listings">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>Provider Hub</CardTitle>
+                <CardTitle>My Service Listings</CardTitle>
                 <CardDescription>
                   Manage your service listings and connect with customers.
                 </CardDescription>
@@ -213,6 +214,29 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <UserTable onEdit={handleEdit} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ) : null}
+        
+        {isAdmin ? (
+          <TabsContent value="providers">
+            <Card>
+              <CardHeader>
+                 <CardTitle>Provider Management</CardTitle>
+                  <CardDescription>
+                    Add, edit, and manage service providers.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent className="text-center py-16 space-y-4">
+                 <p className="text-muted-foreground">
+                  Provider management functionality to be implemented here.
+                </p>
+                <Button asChild>
+                  <Link href="/dashboard/providers">
+                    Go to Provider Management
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

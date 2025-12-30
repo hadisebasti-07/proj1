@@ -7,6 +7,19 @@ export type Category = {
   icon: string;
 };
 
+export type ProviderProfile = {
+  id: string; // Firestore document ID
+  displayName: string;
+  description: string;
+  categories: string[];
+  location: string;
+  photoUrl?: string;
+  rating: number;
+  status: 'active' | 'pending';
+  userId: string;
+  createdAt: Timestamp;
+};
+
 export type Provider = {
   id: string;
   name: string;

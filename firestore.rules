@@ -24,6 +24,12 @@ service cloud.firestore {
       allow update: if isOwner(userId) || isAdmin();
       allow delete: if isOwner(userId) || isAdmin();
     }
+    
+    match /providers/{providerId} {
+      allow read: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
 
     match /roles_admin/{userId} {
       allow read, write: if false;
