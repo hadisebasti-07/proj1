@@ -9,12 +9,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
   Table,
   TableBody,
   TableCell,
@@ -26,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { PlusCircle, Loader2, Calendar, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Loader2, Calendar, MoreHorizontal, Edit, Trash2, Users, Briefcase, DollarSign } from 'lucide-react';
 
 import {
     DropdownMenu,
@@ -37,17 +31,19 @@ import {
 import { useFirebase, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { query, collection, where } from 'firebase/firestore';
-import type { Service, Booking } from '@/lib/types';
+import type { Service, Booking, User as UserType, ProviderProfile } from '@/lib/types';
 
 
-function MyBookings() {
+//================================================================================
+// Customer Dashboard Components
+//================================================================================
+
+function CustomerBookings() {
     const { user } = useFirebase();
     const firestore = useFirestore();
 
     const bookingsQuery = useMemoFirebase(() => {
         if (!user) return null;
-        // This query will only work if firestore rules allow it.
-        // Assumes a rule like: allow list: if request.query.where.customerId == request.auth.uid;
         return query(collection(firestore, 'bookings'), where('customerId', '==', user.uid));
     }, [firestore, user]);
 
@@ -56,7 +52,7 @@ function MyBookings() {
     return (
         <Card>
             <CardHeader>
-              <CardTitle>My Upcoming & Past Bookings</CardTitle>
+              <CardTitle>My Bookings</CardTitle>
               <CardDescription>
                 Manage your scheduled and completed services.
               </CardDescription>
@@ -121,73 +117,20 @@ function MyBookings() {
     );
 }
 
-function AdminBookings() {
-    const firestore = useFirestore();
-    const bookingsQuery = useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]);
-    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
-    
-    return (
-        <Card>
-            <CardHeader>
-              <CardTitle>All Bookings</CardTitle>
-              <CardDescription>
-                View all bookings across the platform.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                    <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                ) : !bookings || bookings.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                        <p>No bookings have been made on the platform yet.</p>
-                    </div>
-                ) : (
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Service</TableHead>
-                             <TableHead>Customer ID</TableHead>
-                            <TableHead>Provider ID</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Status</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {bookings.map((booking) => (
-                            <TableRow key={booking.id}>
-                            <TableCell className="font-medium">
-                                {booking.serviceId}
-                            </TableCell>
-                             <TableCell>{booking.customerId}</TableCell>
-                            <TableCell>{booking.providerId}</TableCell>
-                            <TableCell>
-                                {booking.bookingDate ? format(booking.bookingDate.toDate(), 'PPP p') : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                variant={
-                                    booking.status === 'completed'
-                                    ? 'default'
-                                    : booking.status === 'confirmed'
-                                    ? 'secondary'
-                                    : 'destructive'
-                                }
-                                className="capitalize"
-                                >
-                                {booking.status}
-                                </Badge>
-                            </TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                )}
-            </CardContent>
-          </Card>
-    );
+function CustomerDashboard() {
+  return (
+    <div className="space-y-8">
+      <CustomerBookings />
+    </div>
+  );
 }
 
-function MyListings() {
+
+//================================================================================
+// Provider Dashboard Components
+//================================================================================
+
+function ProviderListings() {
     const { user } = useFirebase();
     const firestore = useFirestore();
 
@@ -204,7 +147,7 @@ function MyListings() {
               <div>
                 <CardTitle>My Service Listings</CardTitle>
                 <CardDescription>
-                  Manage your service listings and connect with customers.
+                  Manage your service listings and view their status.
                 </CardDescription>
               </div>
               <Button asChild>
@@ -220,10 +163,10 @@ function MyListings() {
                 ) : !services || services.length === 0 ? (
                     <div className="text-center py-16">
                         <h3 className="text-xl font-semibold mb-2">
-                            You have no active listings.
+                            You have no listings.
                         </h3>
                         <p className="text-muted-foreground mb-4">
-                            Start offering your services on MarketConnect today.
+                            Create a service listing to start offering your services.
                         </p>
                     </div>
                 ) : (
@@ -282,93 +225,160 @@ function MyListings() {
     )
 }
 
-function AdminListings() {
-    const firestore = useFirestore();
-    const servicesQuery = useMemoFirebase(() => collection(firestore, 'services'), [firestore]);
-    const { data: services, isLoading } = useCollection<Service>(servicesQuery);
-
-    return (
+function ProviderDashboard() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="lg:col-span-2 space-y-8">
+        <ProviderListings />
+        {/* Placeholder for provider bookings */}
+        <Card>
+            <CardHeader>
+                <CardTitle>My Bookings</CardTitle>
+                <CardDescription>View upcoming and past bookings from customers.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-16 text-muted-foreground">
+                <p>Bookings from customers will appear here.</p>
+            </CardContent>
+        </Card>
+      </div>
+      <div className="space-y-8">
+        <Card>
+            <CardHeader>
+                <CardTitle>Availability</CardTitle>
+                <CardDescription>Set your weekly working hours.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Button asChild className="w-full">
+                    <Link href="/dashboard/provider/availability">
+                        <Calendar className="mr-2 h-4 w-4" /> Manage Availability
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
          <Card>
+            <CardHeader>
+                <CardTitle>My Wallet</CardTitle>
+                <CardDescription>View your balance and request payouts.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="text-center p-4 border rounded-lg bg-secondary">
+                    <p className="text-sm text-muted-foreground">Current Balance</p>
+                    <p className="text-3xl font-bold">$0.00</p>
+                </div>
+                <Button className="w-full" disabled>
+                    <DollarSign className="mr-2 h-4 w-4" /> Request Payout
+                </Button>
+            </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+//================================================================================
+// Admin Dashboard Components
+//================================================================================
+
+function AdminSummary() {
+  const firestore = useFirestore();
+  const { data: users } = useCollection<UserType>(useMemoFirebase(() => collection(firestore, 'users'), [firestore]));
+  const { data: providers } = useCollection<ProviderProfile>(useMemoFirebase(() => collection(firestore, 'providers'), [firestore]));
+  const { data: services } = useCollection<Service>(useMemoFirebase(() => collection(firestore, 'services'), [firestore]));
+  const { data: bookings } = useCollection<Booking>(useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]));
+  
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{users?.length ?? <Loader2 className="h-6 w-6 animate-spin" />}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Providers</CardTitle>
+          <Briefcase className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{providers?.length ?? <Loader2 className="h-6 w-6 animate-spin" />}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Services</CardTitle>
+          <Briefcase className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{services?.length ?? <Loader2 className="h-6 w-6 animate-spin" />}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{bookings?.length ?? <Loader2 className="h-6 w-6 animate-spin" />}</div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AdminDashboard() {
+  return (
+    <div className="space-y-8">
+      <AdminSummary />
+
+      <div className="grid gap-8 md:grid-cols-2">
+        <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>All Service Listings</CardTitle>
+                <CardTitle>User Management</CardTitle>
                 <CardDescription>
-                  Manage all service listings on the platform.
+                  View and manage all user accounts in the system.
                 </CardDescription>
               </div>
             </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                     <div className="flex justify-center items-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                ) : !services || services.length === 0 ? (
-                    <div className="text-center py-16 text-muted-foreground">
-                        <p>No services have been listed on the platform yet.</p>
-                    </div>
-                ) : (
-                    <div className="border rounded-lg">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Provider</TableHead>
-                                    <TableHead>Price</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Created</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {services.map((service) => (
-                                    <TableRow key={service.id}>
-                                        <TableCell className="font-medium">{service.title}</TableCell>
-                                        <TableCell>{service.provider.name}</TableCell>
-                                        <TableCell>${service.price.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={service.isActive ? 'default' : 'secondary'}>
-                                                {service.isActive ? 'Active' : 'Inactive'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>{format(service.createdAt.toDate(), 'PPP')}</TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/dashboard/provider/edit/${service.id}`}>
-                                                            <Edit className="mr-2 h-4 w-4" />
-                                                            <span>Edit</span>
-                                                        </Link>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive">
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        <span>Delete</span>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                )}
+            <CardContent className="text-center py-8">
+                <Button asChild>
+                <Link href="/dashboard/users">
+                    Manage Users
+                </Link>
+                </Button>
             </CardContent>
-          </Card>
-    )
+        </Card>
+        <Card>
+            <CardHeader>
+                <CardTitle>Provider Management</CardTitle>
+                <CardDescription>
+                Add, edit, and manage service providers.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="text-center py-8">
+            <Button asChild>
+                <Link href="/dashboard/providers">
+                    Manage Providers
+                </Link>
+            </Button>
+            </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
 }
 
 
-export default function DashboardPage() {
-  const { user, isUserLoading, isUserAdmin } = useFirebase();
-  const router = useRouter();
+//================================================================================
+// Main Dashboard Page
+//================================================================================
 
-  const isLoading = isUserLoading;
-  const isAdmin = !isLoading && isUserAdmin;
+export default function DashboardPage() {
+  const { user, userProfile, isUserLoading, isUserAdmin } = useFirebase();
+  const router = useRouter();
 
   React.useEffect(() => {
     if (!isUserLoading && !user) {
@@ -376,7 +386,7 @@ export default function DashboardPage() {
     }
   }, [user, isUserLoading, router]);
 
-  if (isLoading) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -389,98 +399,51 @@ export default function DashboardPage() {
     return null;
   }
 
+  const getRole = () => {
+    if (isUserAdmin) return 'admin';
+    if (userProfile?.role === 'provider') return 'provider';
+    return 'customer';
+  }
+
+  const role = getRole();
+  
+  const renderDashboardContent = () => {
+    switch(role) {
+      case 'admin':
+        return <AdminDashboard />;
+      case 'provider':
+        return <ProviderDashboard />;
+      case 'customer':
+      default:
+        return <CustomerDashboard />;
+    }
+  }
+  
+  const getDashboardTitle = () => {
+    switch(role) {
+      case 'admin':
+        return 'Admin Dashboard';
+      case 'provider':
+        return 'Provider Dashboard';
+      case 'customer':
+      default:
+        return 'My Dashboard';
+    }
+  }
+
   return (
     <div className="container mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-8">My Dashboard</h1>
-
-      <Tabs defaultValue="bookings" className="w-full">
-        <TabsList
-          className={`grid w-full ${
-            isAdmin ? 'grid-cols-5' : 'grid-cols-3'
-          } mb-6`}
-        >
-          <TabsTrigger value="bookings">{isAdmin ? "All Bookings" : "My Bookings"}</TabsTrigger>
-          <TabsTrigger value="listings">{isAdmin ? "All Listings" : "My Listings"}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="users">Users</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="providers">Providers</TabsTrigger>}
-          <TabsTrigger value="account">Account</TabsTrigger>
-        </TabsList>
-        <TabsContent value="bookings">
-          {isAdmin ? <AdminBookings /> : <MyBookings />}
-        </TabsContent>
-        <TabsContent value="listings">
-          {isAdmin ? <AdminListings /> : <MyListings />}
-        </TabsContent>
-
-        {isAdmin ? (
-          <TabsContent value="users">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>
-                    View and manage all user accounts in the system.
-                  </CardDescription>
-                </div>
-                 <Button asChild>
-                  <Link href="/dashboard/users">
-                    Go to User Management
-                  </Link>
-                </Button>
-              </CardHeader>
-               <CardContent className="text-center py-16 space-y-4">
-                 <p className="text-muted-foreground">
-                  User management functionality to be implemented here.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ) : null}
-        
-        {isAdmin ? (
-          <TabsContent value="providers">
-            <Card>
-              <CardHeader>
-                 <CardTitle>Provider Management</CardTitle>
-                  <CardDescription>
-                    Add, edit, and manage service providers.
-                  </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-16 space-y-4">
-                 <p className="text-muted-foreground">
-                  Provider management functionality to be implemented here.
-                </p>
-                <Button asChild>
-                  <Link href="/dashboard/providers">
-                    Go to Provider Management
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ) : null}
-
-        <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Settings</CardTitle>
-              <CardDescription>
-                Update your profile and set your availability.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="py-16 text-center">
-               <p className="text-muted-foreground mb-4">
-                Set your weekly hours to let customers know when you're available.
-              </p>
-               <Button asChild>
-                <Link href="/dashboard/provider/availability">
-                  <Calendar className="mr-2 h-4 w-4" /> Manage Availability
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">{getDashboardTitle()}</h1>
+        {role === 'provider' && (
+          <Button asChild>
+            <Link href="/dashboard/provider/create">
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Listing
+            </Link>
+          </Button>
+        )}
+      </div>
+      {renderDashboardContent()}
     </div>
   );
 }
