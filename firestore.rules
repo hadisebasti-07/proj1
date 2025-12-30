@@ -63,8 +63,8 @@ service cloud.firestore {
 
     // Provider public profiles
     match /providers/{providerId} {
-      allow get, list: if true; // Publicly readable
-      allow create, update, delete: if isAdmin() || isOwner(providerId); // Admin or provider can manage.
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin() || isOwner(providerId);
     }
     
     // Provider Availability
@@ -74,12 +74,36 @@ service cloud.firestore {
        allow create, update: if isOwner(providerId);
        allow delete: if false; // Should be updated, not deleted.
     }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      // A customer or provider can get a booking they are involved in.
+      allow get: if isSignedIn() && (isOwner(existingData().customerId) || isOwner(existingData().providerId));
+      
+      // Users can only list their own bookings, not all of them.
+      // This requires queries on the client side (e.g., where('customerId', '==', auth.uid))
+      allow list: if isSignedIn();
+      
+      // A customer can create their own booking.
+      allow create: if isOwner(incomingData().customerId);
+      
+      // A customer can cancel a pending/confirmed booking.
+      // A provider can confirm a pending booking or complete a confirmed one.
+      allow update: if (isOwner(existingData().customerId) && incomingData().status == 'cancelled') || 
+                       (isOwner(existingData().providerId) && (
+                         (existingData().status == 'pending' && incomingData().status == 'confirmed') ||
+                         (existingData().status == 'confirmed' && incomingData().status == 'completed')
+                       ));
+
+      // Bookings are archived (cancelled), not deleted by clients.
+      allow delete: if false; 
+    }
     
     // Admin role management collection
     match /roles_admin/{userId} {
       // This collection is managed by backend/admins only.
       // No client-side reads or writes are allowed for listing/writing.
-      allow get: if isOwner(userId); // Allow a user to check their own admin status.
+      allow get: if isOwner(userId);
       allow list, write: if false;
     }
   }

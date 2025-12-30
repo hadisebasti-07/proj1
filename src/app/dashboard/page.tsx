@@ -120,7 +120,7 @@ export default function DashboardPage() {
         <TabsContent value="bookings">
           <Card>
             <CardHeader>
-              <CardTitle>Upcoming &amp; Past Bookings</CardTitle>
+              <CardTitle>Upcoming & Past Bookings</CardTitle>
               <CardDescription>
                 Manage your scheduled and completed services.
               </CardDescription>

@@ -139,6 +139,14 @@
           "description": "Services offered by a specific provider."
         }
       },
+       {
+        "path": "/bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": { "$ref": "#/backend/entities/Booking" },
+          "description": "Stores all bookings across the platform."
+        }
+      },
       {
         "path": "/providers/{providerId}",
         "definition": {
