@@ -1,10 +1,10 @@
 'use client';
 
-import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, onSnapshot, collection, query, getDocs, limit } from 'firebase/firestore';
+import { Firestore, doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged } from 'firebase/auth';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import type { User as UserProfile } from '@/lib/types';
 
 interface FirebaseProviderProps {
@@ -83,12 +83,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
     const unsubscribeAuth = onAuthStateChanged(
       auth,
       (firebaseUser) => { 
-        if (firebaseUser) {
-           setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: true, userError: null }));
-        } else {
-           // If user logs out, reset everything and set loading to false.
-           setUserAuthState({ user: null, userProfile: null, isUserLoading: false, isUserAdmin: false, userError: null });
-        }
+        setUserAuthState(prevState => ({ ...prevState, user: firebaseUser, isUserLoading: !!firebaseUser, userError: null }));
       },
       (error) => { 
         console.error("FirebaseProvider: onAuthStateChanged error:", error);
@@ -96,57 +91,67 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       }
     );
     return () => unsubscribeAuth(); 
-  }, [auth]); 
+  }, [auth]);
 
-  // Effect to subscribe to user's profile and admin status based on auth state
+  // Effect to fetch user profile and admin status
   useEffect(() => {
-    if (!firestore || !userAuthState.user) {
+    if (!userAuthState.user || !firestore) {
       if (!userAuthState.user) {
-        setUserAuthState(prevState => ({ ...prevState, isUserLoading: false, isUserAdmin: false, userProfile: null }));
+        // If there's no user, we are done loading.
+        setUserAuthState(prevState => ({ ...prevState, isUserLoading: false, userProfile: null, isUserAdmin: false }));
       }
       return;
     }
 
     const { user } = userAuthState;
-    const userDocRef = doc(firestore, 'users', user.uid);
+    const profileRef = doc(firestore, 'users', user.uid);
+    const adminRef = doc(firestore, 'roles_admin', user.uid);
+
+    let profileData: UserProfile | null = null;
+    let isAdmin = false;
     
-    // Check admin status by attempting a query only admins can make.
-    const checkAdminStatus = async () => {
-      const usersQuery = query(collection(firestore, 'users'), limit(1));
-      try {
-        await getDocs(usersQuery);
-        // If the query succeeds, the user is an admin.
-        setUserAuthState(prevState => ({ ...prevState, isUserAdmin: true }));
-      } catch (error) {
-        // If it fails, they are not an admin. This is expected for non-admins.
-        setUserAuthState(prevState => ({ ...prevState, isUserAdmin: false }));
-      }
-    };
-  
-    // Subscribe to the user's profile document
-    const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-      const profileData = doc.exists() ? doc.data() as UserProfile : null;
-      // After getting the profile, check admin status.
-      checkAdminStatus().finally(() => {
-        // Only set loading to false after both checks are complete.
+    let profileDone = false;
+    let adminDone = false;
+
+    const checkAndFinalizeState = () => {
+      // Only set loading to false when both checks are complete.
+      if (profileDone && adminDone) {
         setUserAuthState(prevState => ({
           ...prevState,
           userProfile: profileData,
-          isUserLoading: false 
+          isUserAdmin: isAdmin,
+          isUserLoading: false,
         }));
-      });
+      }
+    };
+
+    const unsubscribeProfile = onSnapshot(profileRef, (snapshot) => {
+      profileData = snapshot.exists() ? (snapshot.data() as UserProfile) : null;
+      profileDone = true;
+      checkAndFinalizeState();
     }, (error) => {
-      console.error("Error fetching user profile:", error);
-      // Still check admin status even if profile fails, then stop loading.
-      checkAdminStatus().finally(() => {
-        setUserAuthState(prevState => ({ ...prevState, userError: error, isUserLoading: false }));
-      });
+      console.error('Error fetching user profile:', error);
+      profileData = null;
+      profileDone = true;
+      checkAndFinalizeState();
     });
-  
+
+    const unsubscribeAdmin = onSnapshot(adminRef, (snapshot) => {
+      isAdmin = snapshot.exists();
+      adminDone = true;
+      checkAndFinalizeState();
+    }, (error) => {
+      // Errors are expected if collection/doc doesn't exist or rules deny.
+      // We can safely assume user is not an admin.
+      isAdmin = false;
+      adminDone = true;
+      checkAndFinalizeState();
+    });
+
     return () => {
       unsubscribeProfile();
+      unsubscribeAdmin();
     };
-  
   }, [userAuthState.user, firestore]);
 
   // Memoize the context value
@@ -157,11 +162,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       firebaseApp: servicesAvailable ? firebaseApp : null,
       firestore: servicesAvailable ? firestore : null,
       auth: servicesAvailable ? auth : null,
-      user: userAuthState.user,
-      userProfile: userAuthState.userProfile,
-      isUserLoading: userAuthState.isUserLoading,
-      isUserAdmin: userAuthState.isUserAdmin,
-      userError: userAuthState.userError,
+      ...userAuthState,
     };
   }, [firebaseApp, firestore, auth, userAuthState]);
 
@@ -214,13 +215,16 @@ export const useFirebaseApp = (): FirebaseApp => {
   return firebaseApp;
 };
 
-type MemoFirebase <T> = T & {__memo?: boolean};
-
-export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | (MemoFirebase<T>) {
+export function useMemoFirebase<T>(factory: () => T, deps: React.DependencyList): T {
   const memoized = useMemo(factory, deps);
   
-  if(typeof memoized !== 'object' || memoized === null) return memoized;
-  (memoized as MemoFirebase<T>).__memo = true;
+  if(typeof memoized === 'object' && memoized !== null) {
+    Object.defineProperty(memoized, '__memo', {
+      value: true,
+      writable: false,
+      enumerable: false,
+    });
+  }
   
   return memoized;
 }

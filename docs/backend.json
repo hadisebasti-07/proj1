@@ -1,130 +1,66 @@
 {
   "entities": {
     "User": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
+      "description": "Represents a user in the application, can be a customer or a provider.",
       "type": "object",
-      "description": "Represents a user in the MarketConnect application.",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "Unique identifier for the User entity, matching Firebase Auth UID."
-        },
-        "name": {
-          "type": "string",
-          "description": "The user's full name."
-        },
-        "email": {
-          "type": "string",
-          "description": "The user's email address.",
-          "format": "email"
-        },
-        "phone": {
-          "type": "string",
-          "description": "The user's phone number."
-        },
-        "role": {
-          "type": "string",
-          "description": "The user's role within the application (customer, provider). This is for UI purposes and not for authorization.",
-          "enum": ["customer", "provider"]
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The timestamp when the user account was created.",
-          "format": "date-time"
-        }
+        "uid": { "type": "string", "description": "Firebase Auth UID." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "role": { "type": "string", "enum": ["customer", "provider", "admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "uid",
-        "name",
-        "email",
-        "phone",
-        "role",
-        "createdAt"
-      ]
+      "required": ["uid", "email", "role", "createdAt"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "A service offered by a provider.",
+      "type": "object",
+      "properties": {
+        "providerId": { "type": "string", "description": "UID of the user providing the service." },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "priceUnit": { "type": "string", "enum": ["hourly", "fixed"] },
+        "isActive": { "type": "boolean", "description": "Indicates if the service is currently listed." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["providerId", "title", "price", "isActive", "createdAt", "updatedAt"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A booking of a service by a customer.",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string", "description": "UID of the customer." },
+        "providerId": { "type": "string", "description": "UID of the provider." },
+        "serviceId": { "type": "string" },
+        "bookingDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "paid", "refunded"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["customerId", "providerId", "serviceId", "bookingDate", "status", "paymentStatus", "createdAt"]
     },
     "AdminRole": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Admin Role",
       "type": "object",
-      "description": "The existence of a document with a user's UID in the roles_admin collection designates them as an administrator. The document itself can be empty.",
+      "description": "The existence of a document with a user's UID in the roles_admin collection designates them as an administrator.",
       "properties": {
         "isAdmin": {
           "type": "boolean",
-          "description": "Confirms admin status. The existence of the document is the primary check."
+          "description": "Confirms admin status. Should always be true."
         }
       },
       "required": ["isAdmin"]
-    },
-    "Provider": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Provider",
-      "type": "object",
-      "description": "Represents a service provider in the MarketConnect application.",
-      "properties": {
-        "id": {
-            "type": "string",
-            "description": "Unique identifier for the Provider entity."
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The provider's display name."
-        },
-        "description": {
-          "type": "string",
-          "description": "A multi-line description of the provider."
-        },
-        "categories": {
-          "type": "array",
-          "description": "An array of service categories the provider belongs to.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "location": {
-          "type": "string",
-          "description": "The provider's physical location or service area."
-        },
-        "photoUrl": {
-          "type": "string",
-          "description": "URL for the provider's photo.",
-          "format": "uri"
-        },
-        "rating": {
-          "type": "number",
-          "description": "The provider's average rating."
-        },
-        "status": {
-          "type": "string",
-          "description": "The current status of the provider.",
-          "enum": ["active", "pending"]
-        },
-        "userId": {
-          "type": "string",
-          "description": "A reference to the corresponding user document in the users collection."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "The timestamp when the provider profile was created.",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "displayName",
-        "description",
-        "categories",
-        "location",
-        "status",
-        "userId",
-        "createdAt"
-      ]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
+    "providers": ["password", "anonymous"]
   },
   "firestore": {
     "structure": [
@@ -132,48 +68,40 @@
         "path": "/users/{userId}",
         "definition": {
           "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user profile information.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores public-facing user profiles."
+        }
+      },
+      {
+        "path": "/users/{userId}/services/{serviceId}",
+        "definition": {
+          "entityName": "Service",
+          "schema": { "$ref": "#/backend/entities/Service" },
+          "description": "Services offered by a specific provider."
+        }
+      },
+      {
+        "path": "/users/{userId}/private_bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": { "$ref": "#/backend/entities/Booking" },
+          "description": "A customer's private record of their bookings."
+        }
+      },
+      {
+        "path": "/providers/{providerId}/public_bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": { "$ref": "#/backend/entities/Booking" },
+          "description": "A provider's view of bookings for their services (denormalized)."
         }
       },
       {
         "path": "/roles_admin/{userId}",
         "definition": {
           "entityName": "AdminRole",
-          "schema": {
-            "$ref": "#/backend/entities/AdminRole"
-          },
-          "description": "Private collection to designate admin users. The existence of a doc means the user is an admin.",
-           "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier for the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/providers/{providerId}",
-        "definition": {
-          "entityName": "Provider",
-          "schema": {
-            "$ref": "#/backend/entities/Provider"
-          },
-          "description": "Stores service provider information.",
-          "params": [
-            {
-              "name": "providerId",
-              "description": "The unique identifier for the provider."
-            }
-          ]
+          "schema": { "$ref": "#/backend/entities/AdminRole" },
+          "description": "Private collection to designate admin users."
         }
       }
     ]
