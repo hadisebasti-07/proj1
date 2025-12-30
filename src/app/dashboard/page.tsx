@@ -43,7 +43,7 @@ function ProviderListings() {
     const firestore = useFirestore();
 
     const servicesQuery = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return query(collection(firestore, 'services'), where('provider.id', '==', user.uid));
     }, [firestore, user]);
 
@@ -138,7 +138,7 @@ function ProviderBookings() {
     const firestore = useFirestore();
 
     const bookingsQuery = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return query(collection(firestore, 'bookings'), where('providerId', '==', user.uid));
     }, [firestore, user]);
 
@@ -249,10 +249,10 @@ function ProviderDashboard() {
 
 function AdminSummary() {
   const firestore = useFirestore();
-  const { data: users } = useCollection<UserType>(useMemoFirebase(() => collection(firestore, 'users'), [firestore]));
-  const { data: providers } = useCollection<ProviderProfile>(useMemoFirebase(() => collection(firestore, 'providers'), [firestore]));
-  const { data: services } = useCollection<Service>(useMemoFirebase(() => collection(firestore, 'services'), [firestore]));
-  const { data: bookings } = useCollection<Booking>(useMemoFirebase(() => collection(firestore, 'bookings'), [firestore]));
+  const { data: users } = useCollection<UserType>(useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]));
+  const { data: providers } = useCollection<ProviderProfile>(useMemoFirebase(() => firestore ? collection(firestore, 'providers') : null, [firestore]));
+  const { data: services } = useCollection<Service>(useMemoFirebase(() => firestore ? collection(firestore, 'services') : null, [firestore]));
+  const { data: bookings } = useCollection<Booking>(useMemoFirebase(() => firestore ? collection(firestore, 'bookings') : null, [firestore]));
   
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -39,7 +39,7 @@ export default function MyBookingsPage() {
     }, [user, isUserLoading, router]);
 
     const bookingsQuery = useMemoFirebase(() => {
-        if (!user) return null;
+        if (!user || !firestore) return null;
         return query(collection(firestore, 'bookings'), where('customerId', '==', user.uid));
     }, [firestore, user]);
 
