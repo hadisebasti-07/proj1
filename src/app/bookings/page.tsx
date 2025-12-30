@@ -45,7 +45,7 @@ export default function MyBookingsPage() {
 
     const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
     
-    if (isUserLoading || !user) {
+    if (isUserLoading || !user || (isLoading && !bookings)) {
         return (
           <div className="flex h-screen items-center justify-center">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />

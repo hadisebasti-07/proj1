@@ -15,10 +15,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useFirebase, useDoc, useMemoFirebase, useFirestore } from '@/firebase';
-import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import type { Service } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +46,7 @@ function ServiceBookingPage({ params }: { params: { serviceId: string } }) {
   }, [user, isUserLoading, router]);
 
   const handleBooking = async () => {
-    if (!user || !service || !date) {
+    if (!user || !service || !date || !firestore) {
       toast({
         variant: 'destructive',
         title: 'Booking Failed',
@@ -62,7 +61,7 @@ function ServiceBookingPage({ params }: { params: { serviceId: string } }) {
       await addDoc(bookingsCollection, {
         customerId: user.uid,
         providerId: service.provider.id,
-        serviceId: service.id,
+        serviceId: params.serviceId,
         bookingDate: date,
         status: 'pending',
         paymentStatus: 'unpaid',
