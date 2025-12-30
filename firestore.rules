@@ -63,7 +63,9 @@ service cloud.firestore {
         
         // Only the provider who owns the service can manage it.
         // We check the providerId field on the service document.
-        allow create, update, delete: if isOwner(incomingData().provider.id);
+        allow create: if isOwner(incomingData().provider.id);
+        allow update: if isOwner(resource.data.provider.id);
+        allow delete: if isOwner(resource.data.provider.id);
     }
 
     // Provider public profiles
@@ -89,12 +91,11 @@ service cloud.firestore {
     // Bookings
     match /bookings/{bookingId} {
       // A customer or provider can get a booking they are involved in.
-      allow get: if isSignedIn() && (isOwner(existingData().customerId) || isOwner(existingData().providerId));
+      allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
       
-      // Admins can list all bookings for their console.
-      // Non-admins must query bookings with a 'where' clause (e.g., where('customerId', '==', auth.uid))
-      // which is implicitly allowed if the 'get' rule passes for each document in the result.
-      allow list: if isAdmin();
+      // Admins can list all bookings.
+      // Non-admins can only list bookings if they are querying by their own customerId or providerId.
+      allow list: if isAdmin() || (isSignedIn() && (request.query.where.customerId == request.auth.uid || request.query.where.providerId == request.auth.uid));
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);
@@ -105,7 +106,7 @@ service cloud.firestore {
                        (isOwner(existingData().providerId) && (
                          (existingData().status == 'pending' && incomingData().status == 'confirmed') ||
                          (existingData().status == 'confirmed' && incomingData().status == 'completed')
-                       ));
+                       )) || isAdmin();
 
       // Bookings are archived (cancelled), not deleted by clients.
       allow delete: if false; 
@@ -144,7 +145,7 @@ service cloud.firestore {
     // Payout Requests
     match /payout_requests/{payoutId} {
         // A provider can read their own payout requests. Admins can read all.
-        allow get: if isOwner(existingData().providerId) || isAdmin();
+        allow get: if isOwner(resource.data.providerId) || isAdmin();
         allow list: if isAdmin(); // Admins can list all requests to manage them.
         
         // Providers can create new payout requests.

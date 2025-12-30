@@ -93,10 +93,9 @@ service cloud.firestore {
       // A customer or provider can get a booking they are involved in.
       allow get: if isSignedIn() && (resource.data.customerId == request.auth.uid || resource.data.providerId == request.auth.uid || isAdmin());
       
-      // Admins can list all bookings for their console.
-      // Non-admins must query bookings with a 'where' clause (e.g., where('customerId', '==', auth.uid))
-      // which is implicitly allowed if the 'get' rule passes for each document in the result.
-      allow list: if isAdmin();
+      // Admins can list all bookings.
+      // Non-admins can only list bookings if they are querying by their own customerId or providerId.
+      allow list: if isAdmin() || (isSignedIn() && (request.query.where.customerId == request.auth.uid || request.query.where.providerId == request.auth.uid));
       
       // A customer can create their own booking.
       allow create: if isOwner(incomingData().customerId);
