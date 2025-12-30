@@ -58,7 +58,7 @@ export function UserAuthForm({
       }
       // Non-blocking, so we redirect immediately.
       // The useUser hook will pick up the auth state change.
-      router.push('/dashboard');
+      router.push('/');
       toast({
         title:
           formType === 'login'
