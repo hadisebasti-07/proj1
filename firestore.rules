@@ -17,9 +17,12 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // ARCHITECTURE PRINCIPLE: Critical logic runs in backend. Admin status is managed by backend.
-      // This function securely checks for admin privileges without exposing admin list.
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      // ARCHITECTURE PRINCIPLE: Admin status is verified by checking a server-controlled document.
+      // This securely checks for admin privileges by reading a document that clients cannot write to.
+      // It also checks the content of the document to ensure the 'isAdmin' flag is explicitly true.
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/roles_admin/$(request.auth.uid)).data.isAdmin == true;
     }
     
     function isNewData(data) {

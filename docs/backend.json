@@ -62,9 +62,14 @@
         "isAdmin": {
           "type": "boolean",
           "description": "Confirms admin status. Should always be true."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "super_admin"],
+          "description": "Specifies the level of administrative privileges."
         }
       },
-      "required": ["isAdmin"]
+      "required": ["isAdmin", "role"]
     },
     "ProviderProfile": {
       "title": "Provider Profile",
